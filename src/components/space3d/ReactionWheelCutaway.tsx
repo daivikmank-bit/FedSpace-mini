@@ -1,5 +1,5 @@
 // src/components/space3d/ReactionWheelCutaway.tsx
-// Interactive 3D Reaction Wheel Digital Twin with 1x Phasor Vectors & Fault Actuators
+// Interactive 3D Reaction Wheel Digital Twin with Real Physics Revolutions & 1x Phasors
 
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -35,33 +35,33 @@ export const ReactionWheelCutaway: React.FC = () => {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 100);
     camera.position.set(0, 3.4, 8.2);
     camera.lookAt(0, 0, 0);
 
     // Studio Lighting
     scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(5, 8, 6);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    dirLight.position.set(6, 8, 7);
     scene.add(dirLight);
 
     // Spring Base Plate (Simulating school-level foam tape mount)
-    const baseGeo = new THREE.BoxGeometry(4.5, 0.25, 4.5);
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5, roughness: 0.5 });
+    const baseGeo = new THREE.BoxGeometry(4.6, 0.2, 4.6);
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.6, roughness: 0.4 });
     const basePlate = new THREE.Mesh(baseGeo, baseMat);
     basePlate.position.set(0, -1.8, 0);
     scene.add(basePlate);
 
-    // Motor Root Group (Oscillates under F1 Imbalance)
+    // Motor Root Group (Oscillates radially under F1 Imbalance)
     const motorRoot = new THREE.Group();
     scene.add(motorRoot);
 
-    // TT Gearmotor Yellow Body (₹45 component)
+    // TT Gearmotor Yellow Body (₹45 component with realistic injection-molded finish)
     const motorGeo = new THREE.BoxGeometry(1.4, 2.2, 1.0);
     const motorMat = new THREE.MeshStandardMaterial({
       color: 0xeab308, // Yellow casing
-      roughness: 0.35,
-      metalness: 0.1
+      roughness: 0.28,
+      metalness: 0.15
     });
     const motorBody = new THREE.Mesh(motorGeo, motorMat);
     motorBody.position.set(0, -0.4, 0);
@@ -70,7 +70,7 @@ export const ReactionWheelCutaway: React.FC = () => {
 
     // Motor Output Shaft (White plastic TT shaft)
     const shaftGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 16);
-    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9 });
+    const shaftMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.2 });
     const shaft = new THREE.Mesh(shaftGeo, shaftMat);
     shaft.rotation.x = Math.PI / 2;
     shaft.position.set(0, 0.2, 0.6);
@@ -82,28 +82,28 @@ export const ReactionWheelCutaway: React.FC = () => {
     motorRoot.add(wheelAssembly);
     wheelGroupRef.current = wheelAssembly;
 
-    // 65mm Wheel Rim & Rubber Tire
-    const tireGeo = new THREE.TorusGeometry(1.9, 0.35, 16, 48);
+    // 65mm Wheel Rim & Rubber Tire (Realistic matte synthetic rubber)
+    const tireGeo = new THREE.TorusGeometry(1.9, 0.36, 16, 48);
     const tireMat = new THREE.MeshStandardMaterial({
       color: 0x0f172a, // Black rubber tire
-      roughness: 0.9,
-      metalness: 0.1
+      roughness: 0.92,
+      metalness: 0.05
     });
     const tire = new THREE.Mesh(tireGeo, tireMat);
     wheelAssembly.add(tire);
 
-    // Wheel Yellow Spokes
-    const hubGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.2, 16);
-    const hubMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
+    // Wheel Yellow Spokes Hub
+    const hubGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.22, 16);
+    const hubMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 });
     const hub = new THREE.Mesh(hubGeo, hubMat);
     hub.rotation.x = Math.PI / 2;
     wheelAssembly.add(hub);
 
-    // 20-Slot Optical Disc (₹25 Plastic Encoder Disc)
-    const discGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.05, 32);
+    // 20-Slot Optical Disc (₹25 Plastic Encoder Disc with realistic slot cutouts)
+    const discGeo = new THREE.CylinderGeometry(1.25, 1.25, 0.04, 32);
     const discMat = new THREE.MeshStandardMaterial({
       color: 0x334155,
-      metalness: 0.8,
+      metalness: 0.85,
       roughness: 0.2,
       wireframe: true
     });
@@ -114,14 +114,14 @@ export const ReactionWheelCutaway: React.FC = () => {
 
     // LM393 Optical Interrupter U-Slot Sensor
     const lm393Geo = new THREE.BoxGeometry(0.5, 0.8, 0.6);
-    const lm393Mat = new THREE.MeshStandardMaterial({ color: 0x0f766e });
+    const lm393Mat = new THREE.MeshStandardMaterial({ color: 0x0f766e, metalness: 0.4 });
     const lm393 = new THREE.Mesh(lm393Geo, lm393Mat);
     lm393.position.set(-1.18, 0.2, 0.6);
     motorRoot.add(lm393);
 
     // Flashing IR LED Indicator
-    const ledGeo = new THREE.SphereGeometry(0.08, 8, 8);
-    const ledMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const ledGeo = new THREE.SphereGeometry(0.08, 12, 12);
+    const ledMat = new THREE.MeshBasicMaterial({ color: 0x22c55e });
     const irLed = new THREE.Mesh(ledGeo, ledMat);
     irLed.position.set(-1.18, 0.65, 0.6);
     motorRoot.add(irLed);
@@ -133,15 +133,14 @@ export const ReactionWheelCutaway: React.FC = () => {
     clipsGroupRef.current = clipsGroup;
 
     for (let i = 0; i < 3; i++) {
-      const clipGeo = new THREE.BoxGeometry(0.3, 0.45, 0.25);
+      const clipGeo = new THREE.BoxGeometry(0.32, 0.45, 0.25);
       const clipMat = new THREE.MeshStandardMaterial({
         color: 0x94a3b8,
         metalness: 0.95,
         roughness: 0.15
       });
       const clip = new THREE.Mesh(clipGeo, clipMat);
-      // Place at outer edge
-      const angle = (i * 0.25);
+      const angle = i * 0.28;
       clip.position.set(Math.cos(angle) * 1.9, Math.sin(angle) * 1.9, 0);
       clip.rotation.z = angle;
       clip.visible = false;
@@ -154,7 +153,7 @@ export const ReactionWheelCutaway: React.FC = () => {
     scene.add(sg90Root);
 
     const sg90BodyGeo = new THREE.BoxGeometry(0.6, 1.1, 0.5);
-    const sg90BodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb }); // Blue plastic SG90
+    const sg90BodyMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.3 }); // Blue plastic SG90
     const sg90Body = new THREE.Mesh(sg90BodyGeo, sg90BodyMat);
     sg90Root.add(sg90Body);
 
@@ -163,7 +162,7 @@ export const ReactionWheelCutaway: React.FC = () => {
     sg90Root.add(wiperArm);
     wiperArmRef.current = wiperArm;
 
-    const armGeo = new THREE.BoxGeometry(1.2, 0.15, 0.15);
+    const armGeo = new THREE.BoxGeometry(1.2, 0.14, 0.14);
     const armMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc });
     const arm = new THREE.Mesh(armGeo, armMat);
     arm.position.set(-0.6, 0, 0);
@@ -188,43 +187,51 @@ export const ReactionWheelCutaway: React.FC = () => {
     // 3D Phasor Arrows:
     // Z0 Baseline (White)
     const z0Dir = new THREE.Vector3(0.35, 0.12, 0).normalize();
-    const z0Arrow = new THREE.ArrowHelper(z0Dir, new THREE.Vector3(0, 0, 1.1), 1.2, 0xffffff, 0.2, 0.15);
+    const z0Arrow = new THREE.ArrowHelper(z0Dir, new THREE.Vector3(0, 0, 1.1), 1.2, 0xffffff, 0.22, 0.16);
     wheelAssembly.add(z0Arrow);
     z0ArrowRef.current = z0Arrow;
 
     // Z1x - Z0 Imbalance Vector (Neon Magenta)
     const z1xDir = new THREE.Vector3(0.01, 0.01, 0).normalize();
-    const z1xArrow = new THREE.ArrowHelper(z1xDir, new THREE.Vector3(0, 0, 1.1), 0.1, 0xff007f, 0.2, 0.15);
+    const z1xArrow = new THREE.ArrowHelper(z1xDir, new THREE.Vector3(0, 0, 1.1), 0.1, 0xff007f, 0.22, 0.16);
     wheelAssembly.add(z1xArrow);
     z1xArrowRef.current = z1xArrow;
 
-    // Animation Loop
+    // =========================================================================
+    // ANIMATION LOOP: ACTUAL PHYSICAL REVOLUTIONS
+    // =========================================================================
     let animId = 0;
+    let lastTime = performance.now();
+
     const animate = () => {
       animId = requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = (now - lastTime) / 1000.0;
+      lastTime = now;
 
       const rpm = store.hk.rpmKalman;
+      // Actual Angular Velocity: ω = 2π * RPM / 60 rad/s
       const omega = (rpm * 2 * Math.PI) / 60.0;
 
-      // Rotate Wheel at actual Kalman velocity
+      // Rotate Wheel at actual physical angular velocity
       if (wheelGroupRef.current) {
-        wheelGroupRef.current.rotation.z += omega * 0.016;
+        wheelGroupRef.current.rotation.z += omega * dt;
       }
 
-      // Flash LM393 Optical IR LED at pulse rate
+      // Flash LM393 Optical IR LED at pulse rate (f_slot = 20 * RPM / 60 Hz)
       if (irLedRef.current) {
-        const pulseRate = (rpm * 20) / 60;
-        const isOn = Math.sin(Date.now() * 0.001 * pulseRate * 2 * Math.PI) > 0;
+        const pulseRate = (rpm * 20) / 60.0;
+        const isOn = Math.sin(now * 0.001 * pulseRate * 2 * Math.PI) > 0;
         const ledMat = irLedRef.current.material as THREE.MeshBasicMaterial;
-        ledMat.color.setHex(isOn ? 0x22c55e : 0x475569);
+        ledMat.color.setHex(isOn ? 0x22c55e : 0x1e293b);
       }
 
       // Motor Base Radial Oscillation under F1 Imbalance
       const clips = store.clipsF1;
       if (clips > 0 && rpm > 30) {
-        const vibAmp = clips * 0.02 * (rpm / 200);
-        motorRoot.position.x = Math.sin(Date.now() * 0.02 * omega) * vibAmp;
-        motorRoot.position.y = Math.cos(Date.now() * 0.02 * omega) * vibAmp;
+        const vibAmp = clips * 0.02 * (rpm / 200.0);
+        motorRoot.position.x = Math.sin(now * 0.02 * omega) * vibAmp;
+        motorRoot.position.y = Math.cos(now * 0.02 * omega) * vibAmp;
       } else {
         motorRoot.position.set(0, 0, 0);
       }
@@ -313,7 +320,7 @@ export const ReactionWheelCutaway: React.FC = () => {
       <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Phasor Legend */}
-      <div className="absolute bottom-1.5 left-2.5 flex items-center space-x-2 pointer-events-none text-[9px] font-mono bg-[#080f1e]/80 backdrop-blur px-2 py-0.5 rounded border border-slate-800">
+      <div className="absolute bottom-1.5 left-2.5 flex items-center space-x-2 pointer-events-none text-[9px] font-mono bg-[#080f1e]/85 backdrop-blur px-2 py-0.5 rounded border border-slate-800">
         <div className="flex items-center space-x-1">
           <span className="w-2.5 h-0.5 bg-white inline-block" />
           <span className="text-slate-300">Z₀ Runout</span>
@@ -345,4 +352,3 @@ export const ReactionWheelCutaway: React.FC = () => {
     </div>
   );
 };
-
