@@ -153,3 +153,4 @@ export interface ITelemetryAdapter {
   triggerEmergencyBrake(): Promise<void>;
   resetFdir(): Promise<void>;
 }
+

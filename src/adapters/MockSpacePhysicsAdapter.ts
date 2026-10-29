@@ -163,3 +163,4 @@ export class MockSpacePhysicsAdapter implements ITelemetryAdapter {
     this.worker?.postMessage({ command: 'RESET_FDIR', args: {} });
   }
 }
+

@@ -589,3 +589,4 @@ self.onmessage = (e: MessageEvent) => {
       break;
   }
 };
+

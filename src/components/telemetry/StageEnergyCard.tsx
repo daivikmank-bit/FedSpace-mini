@@ -89,3 +89,4 @@ export const StageEnergyCard: React.FC = () => {
     </div>
   );
 };
+

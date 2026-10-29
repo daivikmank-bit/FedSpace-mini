@@ -32,3 +32,4 @@ campaigns:
     description: Held-out fault evaluation on unseen setpoints and clip angular positions
     duration_hours_min: 3.0
     setpoints_rpm: [195, 225, 255]
+

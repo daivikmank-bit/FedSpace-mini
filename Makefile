@@ -21,3 +21,4 @@ evaluate:
 
 clean:
 	rm -rf dist node_modules/.vite
+

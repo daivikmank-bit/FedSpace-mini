@@ -96,3 +96,4 @@ export const ClaimsScorecard: React.FC = () => {
     </div>
   );
 };
+

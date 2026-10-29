@@ -36,7 +36,7 @@ export const ReactionWheelCutaway: React.FC = () => {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-    camera.position.set(0, 4.5, 9.5);
+    camera.position.set(0, 3.4, 8.2);
     camera.lookAt(0, 0, 0);
 
     // Studio Lighting
@@ -309,53 +309,40 @@ export const ReactionWheelCutaway: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-space-900/90 border border-slate-800 rounded-lg overflow-hidden select-none">
+    <div className="relative w-full h-full bg-[#080f1e] overflow-hidden select-none">
       <canvas ref={canvasRef} className="w-full h-full block" />
 
-      {/* Overlay Twin Indicators */}
-      <div className="absolute top-2 left-3 flex flex-col space-y-1 pointer-events-none">
-        <div className="text-[11px] font-mono font-bold text-slate-200 flex items-center space-x-1.5">
-          <span className="w-2 h-2 rounded-full bg-amber-400" />
-          <span>REACTION WHEEL DIGITAL TWIN (Sat A)</span>
-        </div>
-        <div className="text-[10px] font-mono text-slate-400">
-          TT Motor • 65mm Wheel • 20-Slot LM393 Optical
-        </div>
-      </div>
-
       {/* Phasor Legend */}
-      <div className="absolute bottom-2 left-3 flex items-center space-x-3 pointer-events-none text-[10px] font-mono">
+      <div className="absolute bottom-1.5 left-2.5 flex items-center space-x-2 pointer-events-none text-[9px] font-mono bg-[#080f1e]/80 backdrop-blur px-2 py-0.5 rounded border border-slate-800">
         <div className="flex items-center space-x-1">
-          <span className="w-3 h-0.5 bg-white inline-block" />
-          <span className="text-slate-300">Z₀ Runout Baseline</span>
+          <span className="w-2.5 h-0.5 bg-white inline-block" />
+          <span className="text-slate-300">Z₀ Runout</span>
         </div>
         <div className="flex items-center space-x-1">
-          <span className="w-3 h-0.5 bg-[#ff007f] inline-block" />
-          <span className="text-[#ff007f]">Z₁ₓ - Z₀ Imbalance Vector</span>
+          <span className="w-2.5 h-0.5 bg-[#ff007f] inline-block" />
+          <span className="text-[#ff007f]">Z₁ₓ Imbalance</span>
         </div>
       </div>
 
       {/* Active Fault Tags on Twin */}
-      <div className="absolute top-2 right-3 flex flex-col items-end space-y-1 pointer-events-none text-[10px] font-mono">
+      <div className="absolute top-1.5 right-2 flex flex-col items-end space-y-0.5 pointer-events-none text-[9px] font-mono">
         {store.clipsF1 > 0 && (
-          <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
-            F1: {store.clipsF1} Binder Clips Snapped
+          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
+            F1: {store.clipsF1} Clips
           </span>
         )}
         {store.frictionF2 !== 'NONE' && (
-          <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
-            F2: SG90 Wiper {store.frictionF2}
+          <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+            F2: {store.frictionF2}
           </span>
         )}
         {store.harnessF3 > 0 && (
-          <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-            F3: Virtual R {store.harnessF3}Ω (V_drop = {(store.hk.currentMa * store.harnessF3 / 1000).toFixed(2)}V)
+          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            F3: {store.harnessF3}Ω
           </span>
         )}
-        <span className="text-slate-400">
-          Winding Temp: <strong className="text-amber-300">{store.hk.windingTempEstC.toFixed(1)}°C</strong>
-        </span>
       </div>
     </div>
   );
 };
+

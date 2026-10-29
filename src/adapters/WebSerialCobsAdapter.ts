@@ -175,3 +175,4 @@ export class WebSerialCobsAdapter implements ITelemetryAdapter {
   public async triggerEmergencyBrake(): Promise<void> { await this.sendCommandPacket(0x0F, 0); }
   public async resetFdir(): Promise<void> { await this.sendCommandPacket(0x0E, 0); }
 }
+

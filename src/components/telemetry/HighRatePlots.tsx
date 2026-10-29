@@ -300,3 +300,4 @@ export const HighRatePlots: React.FC = () => {
     </div>
   );
 };
+
