@@ -1,0 +1,34 @@
+# config/campaign_schedule.yaml
+# Anti-Leakage HIL Campaign Schedule (Strict Calendar/Session Split)
+
+campaigns:
+  - id: N-train
+    description: Baseline normal run spanning multiple RPM setpoints and thermal warmup states
+    duration_hours_min: 5.0
+    faults_injected: false
+    sham_servo_movements: true
+    setpoints_rpm: [180, 200, 220, 240, 260]
+
+  - id: N-val
+    description: Threshold calibration dataset for <= 1 false alarm per 10 hours
+    duration_hours_min: 3.0
+    faults_injected: false
+    setpoints_rpm: [190, 210, 230, 250]
+
+  - id: F-campaign-1
+    description: Graded fault injection for PTQ validation and sensitivity tuning
+    duration_hours_min: 6.0
+    faults:
+      f1_imbalance: [1, 2, 3] # binder clips
+      f2_friction: [L1_10PCT, L2_25PCT, L3_50PCT]
+      f3_harness: [2.2, 4.7] # ohms
+
+  - id: N-test
+    description: Live deployed held-out normal run for Rule-of-Three FAR certification
+    duration_hours_min: 8.0
+    target_false_alarms_max: 1
+
+  - id: F-test
+    description: Held-out fault evaluation on unseen setpoints and clip angular positions
+    duration_hours_min: 3.0
+    setpoints_rpm: [195, 225, 255]

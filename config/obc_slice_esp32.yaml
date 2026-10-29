@@ -1,0 +1,35 @@
+# config/obc_slice_esp32.yaml
+# FedSpace-Mini v2-School OBC Slice Resource Budget Constraints
+
+profile: obc-slice-esp32
+hardware:
+  target_mcu: ESP32-WROOM-32D
+  core_count: 2
+  clock_frequencies_mhz: [80, 160, 240]
+  nominal_eval_clock_mhz: 80
+
+resource_ceilings:
+  flash_bytes_max: 32768      # <= 32 KB model weights + inference code
+  ram_bytes_max: 49152        # <= 48 KB tensor arena + DSP ping-pong buffers
+  hop_duration_ms_max: 50     # <= 50 ms active execution per 1.0s hop (<= 5% duty cycle)
+
+sensors:
+  imu:
+    model: ADXL345
+    sampling_rate_hz: 1600
+    interface: SPI
+    burst_samples_per_watermark: 16
+    watermark_interval_ms: 10
+  current_sensor:
+    model: INA219
+    bus: I2C
+    sampling_rate_hz: 500
+  optical_encoder:
+    sensor: LM393
+    slots: 20
+    timer_unit: PCNT
+
+tolerances_compensation:
+  plastic_disc_slot_jitter_pct: 8.0
+  plastic_tt_wheel_wobble_mm: 1.2
+  v_bus_nominal_v: 5.0
