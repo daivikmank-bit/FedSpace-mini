@@ -11,6 +11,7 @@ import { LeftTreeSidebar } from './components/v2/LeftTreeSidebar';
 import { Center3DView } from './components/v2/Center3DView';
 import { RightInvestigationPanel } from './components/v2/RightInvestigationPanel';
 import { HypothesesEvidenceModal } from './components/v2/HypothesesEvidenceModal';
+import { HardwareConnectModal } from './components/v2/HardwareConnectModal';
 
 export const App: React.FC = () => {
   const store = useStationStore();
@@ -18,6 +19,7 @@ export const App: React.FC = () => {
   const [activeUnit, setActiveUnit] = useState<string>('wheel-assembly');
   const [showPlots, setShowPlots] = useState<boolean>(false);
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState<boolean>(false);
+  const [isHardwareModalOpen, setIsHardwareModalOpen] = useState<boolean>(false);
 
   // Initialize Default Simulator on Mount ("Simulate Now")
   useEffect(() => {
@@ -86,6 +88,7 @@ export const App: React.FC = () => {
         showPlots={showPlots}
         onTogglePlots={() => setShowPlots(!showPlots)}
         onOpenHypothesesModal={() => setIsEvidenceModalOpen(true)}
+        onOpenHardwareModal={() => setIsHardwareModalOpen(true)}
       />
 
       {/* 2. Main Three-Column Cockpit Layout */}
@@ -112,6 +115,12 @@ export const App: React.FC = () => {
       <HypothesesEvidenceModal
         isOpen={isEvidenceModalOpen}
         onClose={() => setIsEvidenceModalOpen(false)}
+      />
+
+      {/* Hardware Connection, Pinout & Packet Diagnostics Modal */}
+      <HardwareConnectModal
+        isOpen={isHardwareModalOpen}
+        onClose={() => setIsHardwareModalOpen(false)}
       />
     </div>
   );

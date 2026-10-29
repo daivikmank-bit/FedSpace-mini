@@ -8,6 +8,7 @@ let cachedDayTexture: THREE.CanvasTexture | null = null;
 let cachedNightTexture: THREE.CanvasTexture | null = null;
 let cachedCloudTexture: THREE.CanvasTexture | null = null;
 let cachedFoilTexture: THREE.CanvasTexture | null = null;
+let cachedSilverMliTexture: THREE.CanvasTexture | null = null;
 let cachedSolarTexture: THREE.CanvasTexture | null = null;
 
 /**
@@ -344,7 +345,7 @@ export function getEarthCloudsTexture(): THREE.CanvasTexture {
 }
 
 /**
- * 4. Aerospace Gold Kapton Multi-Layer Insulation (MLI) Foil Texture
+ * 4. Aerospace Gold Kapton Multi-Layer Insulation (MLI) Foil Texture (Sat A)
  * Generates wrinkled space-grade gold thermal blanket texture with realistic creases.
  */
 export function getKaptonFoilTexture(): THREE.CanvasTexture {
@@ -369,7 +370,6 @@ export function getKaptonFoilTexture(): THREE.CanvasTexture {
     const x2 = x1 + Math.cos(angle) * len;
     const y2 = y1 + Math.sin(angle) * len;
 
-    // Specular crease highlight
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
@@ -387,7 +387,49 @@ export function getKaptonFoilTexture(): THREE.CanvasTexture {
 }
 
 /**
- * 5. Monocrystalline Photovoltaic Silicon Solar Array Texture
+ * 5. Silver / Platinum Aerospace Beta Cloth & MLI Blanket Texture (Sat B Relay)
+ * High-specular creased silver thermal blanket for communications relay satellites.
+ */
+export function getSilverMliTexture(): THREE.CanvasTexture {
+  if (cachedSilverMliTexture) return cachedSilverMliTexture;
+
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+
+  // Platinum silver base
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(0, 0, size, size);
+
+  // Wrinkle creases and micro seams
+  for (let i = 0; i < 350; i++) {
+    const x1 = Math.random() * size;
+    const y1 = Math.random() * size;
+    const len = 12 + Math.random() * 40;
+    const angle = Math.random() * Math.PI * 2;
+    const x2 = x1 + Math.cos(angle) * len;
+    const y2 = y1 + Math.sin(angle) * len;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = Math.random() > 0.5 ? '#ffffff' : '#64748b';
+    ctx.lineWidth = 0.8 + Math.random() * 1.4;
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(3, 3);
+  cachedSilverMliTexture = texture;
+  return texture;
+}
+
+/**
+ * 6. Monocrystalline Photovoltaic Silicon Solar Array Texture
  * Generates iridescent dark navy solar cells with fine silver busbars and grid wires.
  */
 export function getSolarCellTexture(): THREE.CanvasTexture {
@@ -456,4 +498,3 @@ export function getSolarCellTexture(): THREE.CanvasTexture {
   cachedSolarTexture = texture;
   return texture;
 }
-

@@ -9,6 +9,7 @@ import {
   getEarthNightTexture,
   getEarthCloudsTexture,
   getKaptonFoilTexture,
+  getSilverMliTexture,
   getSolarCellTexture
 } from './proceduralSpaceTextures';
 
@@ -27,7 +28,6 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
   const fdirLayer = store.fdirLayer;
   const clipsF1 = store.clipsF1;
 
-  // Local camera mode toggle if not controlled externally
   const [internalCameraMode, setInternalCameraMode] = useState<'SAT_HERO' | 'LEO_ORBIT'>('SAT_HERO');
   const currentMode = externalCameraMode || internalCameraMode;
 
@@ -35,14 +35,16 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const satARootRef = useRef<THREE.Group | null>(null);
-  const satBGroupRef = useRef<THREE.Group | null>(null);
+  const satBRootRef = useRef<THREE.Group | null>(null);
   const earthGlobeRef = useRef<THREE.Mesh | null>(null);
   const earthCloudsRef = useRef<THREE.Mesh | null>(null);
   const earthParentRef = useRef<THREE.Group | null>(null);
   const flywheelRef = useRef<THREE.Mesh | null>(null);
   const antennaAuraRef = useRef<THREE.Mesh | null>(null);
+  const satBAuraRef = useRef<THREE.Mesh | null>(null);
+  const islBeamRef = useRef<THREE.Line | null>(null);
+  const downlinkLineRef = useRef<THREE.Line | null>(null);
   const groundBeaconRef = useRef<THREE.Mesh | null>(null);
-  const groundConeRef = useRef<THREE.Mesh | null>(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -59,7 +61,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     renderer.setSize(width, height, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.toneMappingExposure = 1.3;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;
@@ -70,52 +72,55 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     // =========================================================================
     // 1. SPACE LIGHTING (Harsh high-contrast space sunlight + Earth shine)
     // =========================================================================
-    // Ambient cosmic background light
-    scene.add(new THREE.AmbientLight(0x0a1224, 0.9));
+    scene.add(new THREE.AmbientLight(0x0a1224, 0.95));
 
-    // Harsh Solar Directional Light (Sun in space has zero atmospheric diffusion)
-    const sunLight = new THREE.DirectionalLight(0xfffaed, 3.4);
+    // Sun directional light
+    const sunLight = new THREE.DirectionalLight(0xfffaed, 3.5);
     sunLight.position.set(45, 25, 40);
     scene.add(sunLight);
 
-    // Blue Earth-Shine Albedo Light (Reflected light from Earth oceans)
+    // Blue Earth-Shine albedo light
     const earthShine = new THREE.DirectionalLight(0x38bdf8, 1.4);
     earthShine.position.set(-15, -25, -15);
     scene.add(earthShine);
 
     // Milky Way & Deep Space Starfield
-    const starCount = 2800;
+    const starCount = 3000;
     const starGeo = new THREE.BufferGeometry();
     const starPos = new Float32Array(starCount * 3);
     const starColor = new Float32Array(starCount * 3);
 
     for (let i = 0; i < starCount * 3; i += 3) {
-      const r = 120 + Math.random() * 80;
+      const r = 130 + Math.random() * 80;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos((Math.random() * 2) - 1);
       starPos[i] = r * Math.sin(phi) * Math.cos(theta);
       starPos[i + 1] = r * Math.sin(phi) * Math.sin(theta);
       starPos[i + 2] = r * Math.cos(phi);
 
-      // Star color temperatures (blue-white to warm orange)
       const t = Math.random();
       if (t > 0.8) {
-        starColor[i] = 0.7; starColor[i + 1] = 0.85; starColor[i + 2] = 1.0; // Blue-white
+        starColor[i] = 0.7; starColor[i + 1] = 0.85; starColor[i + 2] = 1.0;
       } else if (t < 0.15) {
-        starColor[i] = 1.0; starColor[i + 1] = 0.75; starColor[i + 2] = 0.5; // Amber
+        starColor[i] = 1.0; starColor[i + 1] = 0.75; starColor[i + 2] = 0.5;
       } else {
-        starColor[i] = 0.95; starColor[i + 1] = 0.95; starColor[i + 2] = 1.0; // White
+        starColor[i] = 0.95; starColor[i + 1] = 0.95; starColor[i + 2] = 1.0;
       }
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
     starGeo.setAttribute('color', new THREE.BufferAttribute(starColor, 3));
     const starMat = new THREE.PointsMaterial({
-      size: 1.1,
+      size: 1.15,
       vertexColors: true,
       transparent: true,
       opacity: 0.9
     });
     scene.add(new THREE.Points(starGeo, starMat));
+
+    // Shared realistic textures
+    const goldFoilTex = getKaptonFoilTexture();
+    const silverMliTex = getSilverMliTexture();
+    const solarTex = getSolarCellTexture();
 
     // =========================================================================
     // 2. PHOTOREALISTIC DUAL-LAYER EARTH (Rotating Globe + Clouds + Atmosphere)
@@ -123,9 +128,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     const earthParent = new THREE.Group();
     scene.add(earthParent);
     earthParentRef.current = earthParent;
-
-    // Earth axial tilt of 23.44 degrees
-    earthParent.rotation.z = (-23.44 * Math.PI) / 180;
+    earthParent.rotation.z = (-23.44 * Math.PI) / 180; // Earth 23.44 deg axial tilt
 
     const earthRadius = 15.0;
 
@@ -146,7 +149,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     earthParent.add(earthGlobe);
     earthGlobeRef.current = earthGlobe;
 
-    // Layer B: Semi-Transparent Dynamic Cloud Sphere (Orbits at independent speed)
+    // Layer B: Semi-Transparent Dynamic Cloud Sphere (Drifts independently)
     const cloudsTex = getEarthCloudsTexture();
     const cloudsGeo = new THREE.SphereGeometry(earthRadius * 1.012, 64, 64);
     const cloudsMat = new THREE.MeshPhongMaterial({
@@ -160,7 +163,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     earthParent.add(earthClouds);
     earthCloudsRef.current = earthClouds;
 
-    // Layer C: Atmospheric Rayleigh Scattering Rim Glow (Fresnel outer shell)
+    // Layer C: Atmospheric Rayleigh Scattering Rim (Fresnel outer shell)
     const atmosGeo = new THREE.SphereGeometry(earthRadius * 1.028, 48, 48);
     const atmosMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
@@ -186,10 +189,8 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     earthGlobe.add(groundBeacon);
     groundBeaconRef.current = groundBeacon;
 
-    // Ground Station LoS Visibility Cone (Green translucent frustum into LEO)
-    const coneHeight = 5.5;
-    const coneRadius = 3.2;
-    const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 24, 1, true);
+    // Ground Station LoS Visibility Cone
+    const coneGeo = new THREE.ConeGeometry(3.2, 5.5, 24, 1, true);
     const coneMat = new THREE.MeshBasicMaterial({
       color: 0x10b981,
       transparent: true,
@@ -200,56 +201,45 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     groundCone.position.set(bx, by, bz);
     groundCone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(bx, by, bz).normalize());
     earthGlobe.add(groundCone);
-    groundConeRef.current = groundCone;
-
-    // Position Earth nicely in the viewport background beneath the spacecraft
     earthParent.position.set(0, -18.0, -3.5);
 
     // =========================================================================
-    // 3. PHOTOREALISTIC 3U CUBESAT (Sat A - DUT Payload Node) BIG IN THE MIDDLE
+    // 3. SATELLITE A (DUT Payload Node) - GOLD KAPTON MLI BLANKET
     // =========================================================================
     const satARoot = new THREE.Group();
     scene.add(satARoot);
     satARootRef.current = satARoot;
 
-    // Textures for realistic aerospace materials
-    const foilTex = getKaptonFoilTexture();
-    const solarTex = getSolarCellTexture();
-
-    // 3U CubeSat CNC-Machined Anodized Skeleton Frame
+    // 3U CubeSat CNC Frame
     const frameGeo = new THREE.BoxGeometry(1.5, 1.5, 4.0);
     const frameMat = new THREE.MeshStandardMaterial({
       color: 0x1e2638,
       metalness: 0.85,
       roughness: 0.3
     });
-    const frame = new THREE.Mesh(frameGeo, frameMat);
-    satARoot.add(frame);
+    satARoot.add(new THREE.Mesh(frameGeo, frameMat));
 
-    // Wrinkled Gold Kapton Multi-Layer Insulation (MLI) Thermal Blanket
+    // Gold Kapton MLI Thermal Blanket Body
     const foilGeo = new THREE.BoxGeometry(1.46, 1.46, 3.92);
     const foilMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b, // Real radiant aerospace gold
-      bumpMap: foilTex,
+      color: 0xf59e0b,
+      bumpMap: goldFoilTex,
       bumpScale: 0.08,
       metalness: 0.92,
       roughness: 0.22
     });
-    const foilMesh = new THREE.Mesh(foilGeo, foilMat);
-    satARoot.add(foilMesh);
+    satARoot.add(new THREE.Mesh(foilGeo, foilMat));
 
-    // Silver Aluminum Corner Guide Rails (Standard CubeSat P-POD deployment rails)
+    // Corner Guide Rails (Standard P-POD Rails)
     const railMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.15 });
-    const cornerOffsets = [
-      [-0.76, -0.76], [0.76, -0.76], [-0.76, 0.76], [0.76, 0.76]
-    ];
+    const cornerOffsets = [[-0.76, -0.76], [0.76, -0.76], [-0.76, 0.76], [0.76, 0.76]];
     cornerOffsets.forEach(([cx, cy]) => {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 4.08), railMat);
       rail.position.set(cx, cy, 0);
       satARoot.add(rail);
     });
 
-    // Deployable Photovoltaic Solar Arrays (Left & Right Wings with authentic silicon cells)
+    // Deployable Photovoltaic Solar Arrays
     const wingGeo = new THREE.BoxGeometry(3.2, 0.06, 2.4);
     const wingMat = new THREE.MeshStandardMaterial({
       map: solarTex,
@@ -257,25 +247,15 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
       roughness: 0.18
     });
 
-    const leftWing = new THREE.Mesh(wingGeo, wingMat);
-    leftWing.position.set(-2.45, 0, 0.3);
-    satARoot.add(leftWing);
+    const leftWingA = new THREE.Mesh(wingGeo, wingMat);
+    leftWingA.position.set(-2.45, 0, 0.3);
+    satARoot.add(leftWingA);
 
-    const rightWing = new THREE.Mesh(wingGeo, wingMat);
-    rightWing.position.set(2.45, 0, 0.3);
-    satARoot.add(rightWing);
+    const rightWingA = new THREE.Mesh(wingGeo, wingMat);
+    rightWingA.position.set(2.45, 0, 0.3);
+    satARoot.add(rightWingA);
 
-    // Gold-Plated PCB Edge Busbars & Deployment Hinges
-    const hingeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.9 });
-    const leftHinge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 12), hingeMat);
-    leftHinge.position.set(-0.82, 0, 0.3);
-    satARoot.add(leftHinge);
-
-    const rightHinge = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.8, 12), hingeMat);
-    rightHinge.position.set(0.82, 0, 0.3);
-    satARoot.add(rightHinge);
-
-    // Open Payload Bay: Active Stainless Steel Reaction Wheel Flywheel
+    // Reaction Wheel Inspection Bay & Flywheel
     const bayHousing = new THREE.Mesh(
       new THREE.CylinderGeometry(0.55, 0.55, 0.28, 32),
       new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.25 })
@@ -283,20 +263,15 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     bayHousing.position.set(0, 0.8, -0.7);
     satARoot.add(bayHousing);
 
-    // Precision Tuned Brass/Steel Flywheel
     const flywheel = new THREE.Mesh(
       new THREE.CylinderGeometry(0.46, 0.46, 0.12, 32),
-      new THREE.MeshStandardMaterial({
-        color: 0xfacc15,
-        metalness: 0.95,
-        roughness: 0.12
-      })
+      new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.95, roughness: 0.12 })
     );
     flywheel.position.set(0, 0.16, 0);
     bayHousing.add(flywheel);
     flywheelRef.current = flywheel;
 
-    // Star Tracker Camera Optics on Nadir Face (Anti-reflective purple/cyan glare)
+    // Star Tracker Camera Optics on Nadir Face
     const starTracker = new THREE.Mesh(
       new THREE.CylinderGeometry(0.24, 0.28, 0.4, 24),
       new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.1 })
@@ -305,25 +280,11 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     starTracker.position.set(0, 0, 2.1);
     satARoot.add(starTracker);
 
-    const lensAperture = new THREE.Mesh(
-      new THREE.CircleGeometry(0.2, 24),
-      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-    );
-    lensAperture.position.set(0, 0, 2.31);
-    satARoot.add(lensAperture);
-
-    // S-Band Patch Antenna (Ceramic patch with brass feed pin)
-    const patchAnt = new THREE.Mesh(
-      new THREE.BoxGeometry(0.45, 0.45, 0.06),
-      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 })
-    );
-    patchAnt.position.set(0, -0.76, 0.5);
-    satARoot.add(patchAnt);
-
     // Deployable Telemetry Dipole Antenna Mast & RF Beacon
-    const mastGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.6, 8);
-    const mastMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.85 });
-    const mast = new THREE.Mesh(mastGeo, mastMat);
+    const mast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 1.6, 8),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.85 })
+    );
     mast.position.set(0, 1.45, 1.4);
     satARoot.add(mast);
 
@@ -334,35 +295,174 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     beaconTip.position.set(0, 0.8, 0);
     mast.add(beaconTip);
 
-    // RF Telemetry Aura (visualizes esp_wifi_stop sleep cycling and alarm pulses)
-    const auraGeo = new THREE.SphereGeometry(2.0, 16, 16);
-    const auraMat = new THREE.MeshBasicMaterial({
+    // RF Telemetry Aura
+    const auraMatA = new THREE.MeshBasicMaterial({
       color: 0xf59e0b,
       transparent: true,
       opacity: 0.25,
       wireframe: true
     });
-    const aura = new THREE.Mesh(auraGeo, auraMat);
-    aura.position.set(0, 1.45, 1.4);
-    satARoot.add(aura);
-    antennaAuraRef.current = aura;
+    const auraA = new THREE.Mesh(new THREE.SphereGeometry(2.0, 16, 16), auraMatA);
+    auraA.position.set(0, 1.45, 1.4);
+    satARoot.add(auraA);
+    antennaAuraRef.current = auraA;
 
     // =========================================================================
-    // 4. SAT B (ISL Relay CubeSat) in the Distance
+    // 4. SATELLITE B (ISL Relay & EGSE Node) - HIGH-GAIN RELAY CUBESAT
     // =========================================================================
-    const satBGroup = new THREE.Group();
-    scene.add(satBGroup);
-    satBGroupRef.current = satBGroup;
+    const satBRoot = new THREE.Group();
+    scene.add(satBRoot);
+    satBRootRef.current = satBRoot;
 
-    const satBChassis = new THREE.Mesh(
-      new THREE.BoxGeometry(0.9, 0.9, 2.4),
-      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.2 })
+    // Sat B Position in Formation: Clearly visible trailing Sat A over Earth horizon
+    satBRoot.position.set(-8.2, 1.9, -6.5);
+    // Orient Sat B so its ISL Dish points directly at Sat A
+    satBRoot.rotation.set(0.1, 0.65, 0.05);
+
+    // 3U+ Communications Relay Chassis
+    const satBFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(1.3, 1.3, 3.4),
+      new THREE.MeshStandardMaterial({ color: 0x1e2638, metalness: 0.85, roughness: 0.25 })
     );
-    satBGroup.add(satBChassis);
-    satBGroup.position.set(-16, 3, -12);
+    satBRoot.add(satBFrame);
+
+    // Silver / Platinum Beta Cloth Thermal MLI Blanket
+    const satBBody = new THREE.Mesh(
+      new THREE.BoxGeometry(1.26, 1.26, 3.32),
+      new THREE.MeshStandardMaterial({
+        color: 0xe2e8f0, // High-specular aerospace silver/platinum
+        bumpMap: silverMliTex,
+        bumpScale: 0.07,
+        metalness: 0.95,
+        roughness: 0.18
+      })
+    );
+    satBRoot.add(satBBody);
+
+    // Silver Guide Rails on Sat B
+    cornerOffsets.forEach(([cx, cy]) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 3.48), railMat);
+      rail.position.set(cx * 0.86, cy * 0.86, 0);
+      satBRoot.add(rail);
+    });
+
+    // Deployable Solar Array Wings on Sat B
+    const wingGeoB = new THREE.BoxGeometry(2.6, 0.05, 1.9);
+    const leftWingB = new THREE.Mesh(wingGeoB, wingMat);
+    leftWingB.position.set(-1.95, 0, 0.1);
+    satBRoot.add(leftWingB);
+
+    const rightWingB = new THREE.Mesh(wingGeoB, wingMat);
+    rightWingB.position.set(1.95, 0, 0.1);
+    satBRoot.add(rightWingB);
+
+    // High-Gain Parabolic Communications Dish (ISL Inter-Satellite Terminal)
+    // Reflector dish aimed along line-of-sight toward Sat A
+    const dishGroup = new THREE.Group();
+    dishGroup.position.set(0, 0.9, 0.8);
+    satBRoot.add(dishGroup);
+
+    // Parabolic Dish Reflector Mesh
+    const dishGeo = new THREE.CylinderGeometry(0.75, 0.15, 0.35, 32, 1, true);
+    const dishMat = new THREE.MeshStandardMaterial({
+      color: 0xfacc15, // Gold mesh space communications reflector
+      metalness: 0.96,
+      roughness: 0.15,
+      side: THREE.DoubleSide
+    });
+    const dish = new THREE.Mesh(dishGeo, dishMat);
+    dish.rotation.x = -Math.PI / 3;
+    dishGroup.add(dish);
+
+    // Dish Central Sub-Reflector Feed Horn
+    const feedHorn = new THREE.Mesh(
+      new THREE.ConeGeometry(0.1, 0.3, 16),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1 })
+    );
+    feedHorn.rotation.x = Math.PI / 2;
+    feedHorn.position.set(0, 0.25, 0.2);
+    dishGroup.add(feedHorn);
+
+    // Sub-reflector tripod struts
+    for (let s = 0; s < 3; s++) {
+      const strutAngle = (s * Math.PI * 2) / 3;
+      const strut = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 0.65, 8),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9 })
+      );
+      strut.position.set(Math.cos(strutAngle) * 0.35, 0.1, Math.sin(strutAngle) * 0.35);
+      strut.rotation.z = Math.PI / 4;
+      dishGroup.add(strut);
+    }
+
+    // High-Gain S/X-Band Helical Downlink Antenna on Nadir Face (Pointed to Earth)
+    const helixMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.03, 0.03, 1.4, 8),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85 })
+    );
+    helixMast.position.set(0, -1.2, 0.4);
+    satBRoot.add(helixMast);
+
+    const helixCoil = new THREE.Mesh(
+      new THREE.TorusGeometry(0.2, 0.03, 12, 32),
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9 })
+    );
+    helixCoil.position.set(0, -1.4, 0.4);
+    satBRoot.add(helixCoil);
+
+    // Attitude Thruster Quads on Sat B Corners
+    const thrusterMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9 });
+    const thrusterPositions = [
+      [-0.6, -0.6, 1.6], [0.6, -0.6, 1.6], [-0.6, 0.6, 1.6], [0.6, 0.6, 1.6]
+    ];
+    thrusterPositions.forEach(([tx, ty, tz]) => {
+      const nozzle = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 8), thrusterMat);
+      nozzle.rotation.x = Math.PI;
+      nozzle.position.set(tx, ty, tz);
+      satBRoot.add(nozzle);
+    });
+
+    // Sat B Cyan ISL Transceiver Beacon Aura
+    const satBAuraMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.2,
+      wireframe: true
+    });
+    const satBAura = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 16), satBAuraMat);
+    satBAura.position.set(0, 0.9, 0.8);
+    satBRoot.add(satBAura);
+    satBAuraRef.current = satBAura;
 
     // =========================================================================
-    // 5. MOUSE DRAG & ORBIT CONTROLS
+    // 5. ANIMATED INTER-SATELLITE LINK (ISL) PACKET BEAM & DOWNLINK
+    // =========================================================================
+    const islGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const islMat = new THREE.LineDashedMaterial({
+      color: 0x00f0ff,
+      dashSize: 0.5,
+      gapSize: 0.25,
+      transparent: true,
+      opacity: 0.85
+    });
+    const islLine = new THREE.Line(islGeo, islMat);
+    scene.add(islLine);
+    islBeamRef.current = islLine;
+
+    // Downlink Beam from Sat B to Earth Ground Station
+    const downGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    const downMat = new THREE.LineBasicMaterial({
+      color: 0x10b981,
+      linewidth: 3,
+      transparent: true,
+      opacity: 0
+    });
+    const downLine = new THREE.Line(downGeo, downMat);
+    scene.add(downLine);
+    downlinkLineRef.current = downLine;
+
+    // =========================================================================
+    // 6. MOUSE DRAG & ORBIT CONTROLS
     // =========================================================================
     let isDragging = false;
     let prevMouseX = 0;
@@ -380,7 +480,6 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
       const dy = e.clientY - prevMouseY;
 
       if (currentMode === 'SAT_HERO') {
-        // Orbit 360 around the satellite
         satARoot.rotation.y += dx * 0.005;
         satARoot.rotation.x += dy * 0.005;
       } else {
@@ -402,7 +501,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     canvas.addEventListener('wheel', onWheel);
 
     // =========================================================================
-    // 6. ANIMATION LOOP: ACTUAL ORBITAL & PHYSICAL REVOLUTIONS
+    // 7. ANIMATION LOOP: ACTUAL ORBITAL & PHYSICAL REVOLUTIONS
     // =========================================================================
     let animId = 0;
     let lastTime = performance.now();
@@ -420,25 +519,25 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
         flywheelRef.current.rotation.y += wheelOmega * dt;
       }
 
-      // Actual Earth Revolution around its spin axis
+      // Actual Earth Rotation around its axial tilt
       if (earthGlobeRef.current) {
-        earthGlobeRef.current.rotation.y += 0.02 * dt; // Earth rotates underneath spacecraft
+        earthGlobeRef.current.rotation.y += 0.02 * dt;
       }
 
-      // Dynamic Cloud Layer Parallax (Clouds drift slightly faster than the crust)
+      // Dynamic Cloud Layer Parallax
       if (earthCloudsRef.current) {
         earthCloudsRef.current.rotation.y += 0.026 * dt;
       }
 
-      // Actual Orbital Revolution of Sat A & Sat B:
-      // In Hero Mode (SAT_HERO):
-      // Sat A stays in the center stage while the Earth, continents, and cloud layers roll past underneath in genuine orbital revolution!
+      // Formation flying attitude oscillation for Sat B
+      satBRoot.rotation.y = 0.65 + Math.sin(now * 0.001) * 0.05;
+      satBRoot.rotation.z = 0.05 + Math.cos(now * 0.0012) * 0.03;
+
+      // Actual Orbital Revolution of Sat A:
       if (currentMode === 'SAT_HERO') {
         const orbitAngle = orbital.orbitFraction * 2 * Math.PI;
-        // Pitch satellite slightly along its velocity vector
         satARoot.rotation.z = Math.sin(orbitAngle * 0.5) * 0.08;
 
-        // Realistic attitude vibration / precession during F1 imbalance
         if (clipsF1 > 0 && rpm > 40) {
           const wobbleFreq = wheelOmega;
           const wobbleAmp = (clipsF1 * 0.015) * Math.min(1.5, rpm / 220);
@@ -450,7 +549,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
         }
       }
 
-      // Camera Smooth Interpolation between modes
+      // Camera Smooth Interpolation
       const targetCamPos = currentMode === 'SAT_HERO'
         ? new THREE.Vector3(4.5, 2.6, 6.8)
         : new THREE.Vector3(0, 24, 38);
@@ -464,13 +563,49 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
         const auraMat = antennaAuraRef.current.material as THREE.MeshBasicMaterial;
 
         if (fdirLayer === 'L1_ALARM' || fdirLayer === 'L0_SAFE_TRIP') {
-          auraMat.color.setHex(0xef4444); // Crimson pulse
+          auraMat.color.setHex(0xef4444);
           auraMat.opacity = 0.5 + Math.sin(now * 0.01) * 0.3;
         } else if (isAwake) {
-          auraMat.color.setHex(0xf59e0b); // Amber Wi-Fi active
+          auraMat.color.setHex(0xf59e0b);
           auraMat.opacity = 0.3;
         } else {
-          auraMat.opacity = 0.03; // Sleep
+          auraMat.opacity = 0.03;
+        }
+      }
+
+      // Sat B Cyan Transceiver Beacon Pulse
+      if (satBAuraRef.current) {
+        const bAuraMat = satBAuraRef.current.material as THREE.MeshBasicMaterial;
+        bAuraMat.opacity = 0.2 + Math.sin(now * 0.004) * 0.15;
+      }
+
+      // Update ISL Line between Sat A and Sat B
+      if (islBeamRef.current) {
+        const lineGeo = islBeamRef.current.geometry;
+        const posA = satARoot.position;
+        const posB = satBRoot.position;
+        const positions = new Float32Array([
+          posA.x, posA.y + 1.4, posA.z + 1.4,
+          posB.x, posB.y + 0.9, posB.z + 0.8
+        ]);
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        lineGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Downlink Beam from Sat B to Earth Ground Station
+      if (downlinkLineRef.current && groundBeaconRef.current) {
+        const isPass = store.orbital.isGroundPassActive;
+        const downMat = downlinkLineRef.current.material as THREE.LineBasicMaterial;
+        downMat.opacity = isPass ? 0.9 : 0.0;
+        if (isPass) {
+          const downGeo = downlinkLineRef.current.geometry;
+          const posGround = earthParent.position.clone().add(groundBeaconRef.current.position);
+          const positions = new Float32Array([
+            satBRoot.position.x, satBRoot.position.y - 1.2, satBRoot.position.z + 0.4,
+            posGround.x, posGround.y, posGround.z
+          ]);
+          downGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          downGeo.attributes.position.needsUpdate = true;
         }
       }
 

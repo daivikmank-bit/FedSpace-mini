@@ -22,15 +22,17 @@ interface TopNavBarProps {
   onTogglePlots: () => void;
   showPlots: boolean;
   onOpenHypothesesModal: () => void;
+  onOpenHardwareModal: () => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
   onTogglePlots,
   showPlots,
-  onOpenHypothesesModal
+  onOpenHypothesesModal,
+  onOpenHardwareModal
 }) => {
   const store = useStationStore();
-  const { orbital, telemetryPolicy, connectionMode, fdirLayer, triggerEmergencyBrake } = store;
+  const { orbital, telemetryPolicy, connectionMode, fdirLayer, triggerEmergencyBrake, isConnected } = store;
 
   const isSim = connectionMode === 'MOCK_SIMULATOR';
 
@@ -69,21 +71,20 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            Baseline
+            Baseline Sim
           </button>
           <button
-            onClick={() => {
-              const evt = new CustomEvent('switch-adapter', { detail: 'WEBSERIAL_COBS' });
-              window.dispatchEvent(evt);
-            }}
+            onClick={onOpenHardwareModal}
             className={`px-3 py-1 rounded-full transition flex items-center space-x-1 ${
-              !isSim
-                ? 'bg-emerald-600 text-white font-medium shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+              !isSim && isConnected
+                ? 'bg-emerald-600 text-white font-medium shadow-sm animate-pulse'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
+            title="Open Hardware Connection & Diagnostics Manager"
           >
-            <span>Live Hardware</span>
-            <ExternalLink className="w-3 h-3 ml-0.5" />
+            <span className={`w-1.5 h-1.5 rounded-full ${!isSim && isConnected ? 'bg-white' : 'bg-emerald-400'}`} />
+            <span>{!isSim && isConnected ? 'Live Link' : 'Live Hardware'}</span>
+            <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
           </button>
         </div>
 
@@ -166,6 +167,22 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
         >
           <Radio className="w-3 h-3" />
           <span>Telemetry Charts</span>
+        </button>
+
+        {/* Hardware Manager Modal Trigger */}
+        <button
+          onClick={onOpenHardwareModal}
+          className={`px-2.5 py-1.5 rounded-md border flex items-center space-x-1.5 transition text-[11px] font-mono ${
+            !isSim && isConnected
+              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+              : 'bg-[#0f172a] hover:bg-slate-800 text-slate-300 border-slate-800'
+          }`}
+          title="Hardware Connect, Serial Diagnostics & Pinout Guide"
+        >
+          <span className={`w-2 h-2 rounded-full ${!isSim && isConnected ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
+          <span className="font-sans hidden md:inline">
+            {!isSim && isConnected ? 'USB 921.6k Active' : 'Hardware Link'}
+          </span>
         </button>
 
         {/* Evidence / Hypotheses Button */}
