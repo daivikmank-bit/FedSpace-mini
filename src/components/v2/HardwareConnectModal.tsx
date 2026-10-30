@@ -121,74 +121,72 @@ export const HardwareConnectModal: React.FC<HardwareConnectModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 font-sans select-none">
-      <div className="bg-[#0b1325] border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 font-mono select-none">
+      <div className="bg-black/95 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.95)] w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] text-white">
         {/* Header */}
-        <div className="p-4 bg-[#0e1930] border-b border-slate-800 flex items-center justify-between shrink-0">
+        <div className="p-4 bg-zinc-950/90 border-b border-white/10 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Usb className="w-4 h-4" />
-            </div>
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
             <div>
-              <h3 className="font-bold text-slate-100 text-sm flex items-center space-x-2">
-                <span>Hardware Connection Manager</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
+              <h3 className="font-bold text-white text-xs uppercase tracking-[0.2em] flex items-center space-x-2">
+                <span>HARDWARE CONNECTION &amp; EGSE GATEWAY</span>
+                <span className={`px-2 py-0.5 text-[9px] font-bold border ${
                   isConnected && connectionMode !== 'MOCK_SIMULATOR'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                    ? 'bg-white text-black border-white'
+                    : 'bg-black text-zinc-400 border-white/20'
                 }`}>
                   {connectionMode === 'MOCK_SIMULATOR' ? 'SIMULATION MODE' : 'LIVE HARDWARE LINK'}
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400 font-mono">
-                Single-USB COBS Serial Interface (921,600 Baud) • Dual-ESP32
+              <p className="text-[10px] text-zinc-500 tracking-wider mt-0.5">
+                SINGLE-USB COBS SERIAL INTERFACE (921,600 BAUD) &bull; DUAL-ESP32 ARCHITECTURE
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg transition"
+            className="text-zinc-500 hover:text-white text-xs uppercase tracking-widest px-2 py-1 bg-white/5 border border-white/10"
           >
-            <X className="w-5 h-5" />
+            [CLOSE ✕]
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="px-4 pt-2 bg-[#0c162b] border-b border-slate-800 flex items-center space-x-2 text-xs font-mono">
+        <div className="px-4 pt-2 bg-black border-b border-white/10 flex items-center space-x-2 text-xs font-mono">
           <button
             onClick={() => setActiveTab('connect')}
-            className={`px-3 py-2 border-b-2 font-medium transition ${
+            className={`px-3 py-2 border-b-2 font-bold uppercase tracking-wider transition ${
               activeTab === 'connect'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-white text-white'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300'
             }`}
           >
-            Connection Setup
+            01 SETUP
           </button>
 
           <button
             onClick={() => setActiveTab('diagnostics')}
-            className={`px-3 py-2 border-b-2 font-medium transition flex items-center space-x-1.5 ${
+            className={`px-3 py-2 border-b-2 font-bold uppercase tracking-wider transition flex items-center space-x-1.5 ${
               activeTab === 'diagnostics'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-white text-white'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Packet Diagnostics</span>
+            <span>02 PACKET DIAGNOSTICS</span>
           </button>
 
           <button
             onClick={() => setActiveTab('wiring')}
-            className={`px-3 py-2 border-b-2 font-medium transition flex items-center space-x-1.5 ${
+            className={`px-3 py-2 border-b-2 font-bold uppercase tracking-wider transition flex items-center space-x-1.5 ${
               activeTab === 'wiring'
-                ? 'border-cyan-400 text-cyan-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-white text-white'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
-            <span>Pinout & Wiring Guide</span>
+            <span>03 DUAL-ESP32 PINOUT GUIDE</span>
           </button>
         </div>
 

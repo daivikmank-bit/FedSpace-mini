@@ -316,35 +316,35 @@ export const ReactionWheelCutaway: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-[#080f1e] overflow-hidden select-none">
+    <div className="relative w-full h-full bg-black/95 overflow-hidden select-none">
       <canvas ref={canvasRef} className="w-full h-full block" />
 
       {/* Phasor Legend */}
-      <div className="absolute bottom-1.5 left-2.5 flex items-center space-x-2 pointer-events-none text-[9px] font-mono bg-[#080f1e]/85 backdrop-blur px-2 py-0.5 rounded border border-slate-800">
+      <div className="absolute bottom-1.5 left-2.5 flex items-center space-x-2.5 pointer-events-none text-[9px] font-mono bg-black/90 backdrop-blur px-2 py-0.5 border border-white/10">
         <div className="flex items-center space-x-1">
           <span className="w-2.5 h-0.5 bg-white inline-block" />
-          <span className="text-slate-300">Z₀ Runout</span>
+          <span className="text-zinc-300">Z₀ RUNOUT</span>
         </div>
         <div className="flex items-center space-x-1">
           <span className="w-2.5 h-0.5 bg-[#ff007f] inline-block" />
-          <span className="text-[#ff007f]">Z₁ₓ Imbalance</span>
+          <span className="text-[#ff007f]">Z₁ₓ IMBALANCE</span>
         </div>
       </div>
 
       {/* Active Fault Tags on Twin */}
       <div className="absolute top-1.5 right-2 flex flex-col items-end space-y-0.5 pointer-events-none text-[9px] font-mono">
         {store.clipsF1 > 0 && (
-          <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
-            F1: {store.clipsF1} Clips
+          <span className="px-1.5 py-0.5 bg-white text-black font-bold border border-white">
+            F1: {store.clipsF1} CLIPS
           </span>
         )}
         {store.frictionF2 !== 'NONE' && (
-          <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+          <span className="px-1.5 py-0.5 bg-white text-black font-bold border border-white">
             F2: {store.frictionF2}
           </span>
         )}
         {store.harnessF3 > 0 && (
-          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+          <span className="px-1.5 py-0.5 bg-white text-black font-bold border border-white">
             F3: {store.harnessF3}Ω
           </span>
         )}

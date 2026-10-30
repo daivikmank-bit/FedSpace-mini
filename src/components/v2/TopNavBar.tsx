@@ -1,226 +1,255 @@
 // src/components/v2/TopNavBar.tsx
-// Sleek Mission Control Top Bar inspired by the reference design
+// SpaceX-styled Mission Control Top Navigation Bar with Feature Dropdown Triggers
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStationStore } from '../../store/useStationStore';
 import { TelemetryPolicy } from '../../types/telemetry';
+import { CameraPreset } from '../space3d/SpaceConstellationCanvas';
 import {
   Satellite,
-  Play,
-  Pause,
-  RotateCcw,
-  Compass,
-  FlaskConical,
-  ShieldAlert,
   ChevronDown,
-  ExternalLink,
+  ShieldAlert,
+  Usb,
   Radio,
-  Check
+  Play,
+  RotateCcw,
+  Check,
+  Camera
 } from 'lucide-react';
 
+export type ActiveDrawer = 'subsystems' | 'fdir' | 'egse' | 'energy' | 'waveforms' | null;
+
 interface TopNavBarProps {
-  onTogglePlots: () => void;
-  showPlots: boolean;
+  activeDrawer: ActiveDrawer;
+  onToggleDrawer: (drawer: ActiveDrawer) => void;
   onOpenHypothesesModal: () => void;
   onOpenHardwareModal: () => void;
+  cameraPreset: CameraPreset;
+  onCameraPresetChange: (preset: CameraPreset) => void;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
-  onTogglePlots,
-  showPlots,
+  activeDrawer,
+  onToggleDrawer,
   onOpenHypothesesModal,
-  onOpenHardwareModal
+  onOpenHardwareModal,
+  cameraPreset,
+  onCameraPresetChange
 }) => {
   const store = useStationStore();
   const { orbital, telemetryPolicy, connectionMode, fdirLayer, triggerEmergencyBrake, isConnected } = store;
 
+  const [isCameraDropdownOpen, setIsCameraDropdownOpen] = useState(false);
+  const [isPolicyDropdownOpen, setIsPolicyDropdownOpen] = useState(false);
+
   const isSim = connectionMode === 'MOCK_SIMULATOR';
+  const isAlarm = fdirLayer !== 'NOMINAL';
+
+  const cameraPresetLabels: Record<CameraPreset, string> = {
+    HERO_CHASE: 'HERO POV (SAT A)',
+    EARTH_HORIZON: 'ORBITAL CONSTELLATION',
+    GROUND_TRACK: 'CAPE CANAVERAL PASS',
+    WHEEL_INSPECT: 'RW-01 MACRO INSPECT'
+  };
+
+  // Convert orbital time into mission clock T+ format (HH:MM:SS)
+  const totalSec = Math.floor(orbital.orbitTimeSec);
+  const hrs = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+  const mins = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+  const secs = String(totalSec % 60).padStart(2, '0');
+  const missionClock = `T+ ${hrs}:${mins}:${secs}`;
 
   return (
-    <header className="h-14 bg-[#0a101f] border-b border-slate-800/80 px-4 flex items-center justify-between text-xs select-none z-30 shrink-0">
-      {/* 1. Left: Brand & Lab Pill */}
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-            <Satellite className="w-4 h-4" />
+    <header className="fixed top-0 left-0 right-0 h-14 bg-black/85 backdrop-blur-xl border-b border-white/10 px-5 flex items-center justify-between text-white font-mono uppercase tracking-[0.15em] text-xs select-none z-40">
+      {/* 1. Left: Brand & Camera Switcher */}
+      <div className="flex items-center space-x-4">
+        {/* Brand */}
+        <div className="flex items-center space-x-2.5">
+          <div className="w-7 h-7 bg-white text-black font-bold flex items-center justify-center text-xs tracking-tighter">
+            FS
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-sm tracking-wide text-white leading-none flex items-center space-x-1.5">
-              <span>((o))</span>
-              <span>FedSpace-Mini</span>
+            <span className="font-bold text-xs tracking-[0.2em] text-white leading-none">
+              FEDSPACE // MINI
             </span>
-            <span className="text-[10px] text-slate-400 font-mono leading-tight mt-0.5">
-              Simulation Lab v2S
+            <span className="text-[9px] text-zinc-500 tracking-widest mt-0.5">
+              MISSION CONTROL &bull; LEO
             </span>
           </div>
         </div>
 
-        {/* Mode Toggle Button */}
-        <div className="hidden sm:flex items-center bg-[#0f172a] p-0.5 rounded-full border border-slate-800 text-[11px]">
-          <button
-            onClick={() => {
-              if (!isSim) {
-                // Switch to simulator
-                const evt = new CustomEvent('switch-adapter', { detail: 'MOCK_SIMULATOR' });
-                window.dispatchEvent(evt);
-              }
-            }}
-            className={`px-3 py-1 rounded-full transition ${
-              isSim
-                ? 'bg-blue-600 text-white font-medium shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Baseline Sim
-          </button>
-          <button
-            onClick={onOpenHardwareModal}
-            className={`px-3 py-1 rounded-full transition flex items-center space-x-1 ${
-              !isSim && isConnected
-                ? 'bg-emerald-600 text-white font-medium shadow-sm animate-pulse'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-            }`}
-            title="Open Hardware Connection & Diagnostics Manager"
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${!isSim && isConnected ? 'bg-white' : 'bg-emerald-400'}`} />
-            <span>{!isSim && isConnected ? 'Live Link' : 'Live Hardware'}</span>
-            <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
-          </button>
-        </div>
+        <span className="text-zinc-800">|</span>
 
-        {/* Telemetry Policy Pills */}
-        <div className="hidden md:flex items-center space-x-1 pl-2 border-l border-slate-800/80">
-          {(['P0_RAW', 'P1_1HZ_HK', 'P2_EDGE_FDIR', 'P3_ISL_RELAY'] as TelemetryPolicy[]).map((p) => {
-            const isActive = telemetryPolicy === p;
-            const labelMap: Record<TelemetryPolicy, string> = {
-              P0_RAW: 'Raw 1.6kHz',
-              P1_1HZ_HK: '1Hz HK',
-              P2_EDGE_FDIR: 'Edge FDIR',
-              P3_ISL_RELAY: 'ISL Relay'
-            };
+        {/* Camera Preset Dropdown Trigger */}
+        <div className="relative">
+          <button
+            onClick={() => setIsCameraDropdownOpen(!isCameraDropdownOpen)}
+            className="flex items-center space-x-1.5 px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 hover:text-white transition"
+          >
+            <Camera className="w-3 h-3 text-zinc-400" />
+            <span className="font-bold">{cameraPresetLabels[cameraPreset]}</span>
+            <ChevronDown className="w-3 h-3 text-zinc-500 ml-0.5" />
+          </button>
 
-            return (
-              <button
-                key={p}
-                onClick={() => store.setTelemetryPolicy(p)}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-mono transition ${
-                  isActive
-                    ? 'bg-slate-800 text-cyan-400 font-medium border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.15)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-                }`}
-              >
-                {labelMap[p]}
-              </button>
-            );
-          })}
+          {isCameraDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 w-56 bg-black/95 backdrop-blur-2xl border border-white/20 shadow-2xl p-1 z-50 text-[11px]">
+              {(['HERO_CHASE', 'EARTH_HORIZON', 'GROUND_TRACK', 'WHEEL_INSPECT'] as CameraPreset[]).map((preset) => (
+                <button
+                  key={preset}
+                  onClick={() => {
+                    onCameraPresetChange(preset);
+                    setIsCameraDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 font-bold transition flex items-center justify-between ${
+                    cameraPreset === preset
+                      ? 'bg-white text-black'
+                      : 'text-zinc-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <span>{cameraPresetLabels[preset]}</span>
+                  {cameraPreset === preset && <Check className="w-3 h-3" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 2. Center: Timeline & Orbital Pass Controls (Ref: "▶ |▷ 10x ⌵ | 01:00 IST | Interval 4 / 96") */}
-      <div className="flex items-center space-x-3 bg-[#0d1527] px-3 py-1.5 rounded-full border border-slate-800 font-mono text-[11px]">
-        {/* Playback Controls */}
-        <div className="flex items-center space-x-1.5 text-slate-300">
-          <button className="p-1 hover:text-white rounded">
-            <Play className="w-3.5 h-3.5 fill-current" />
-          </button>
-          <div className="flex items-center space-x-1 text-slate-400 hover:text-slate-200 cursor-pointer">
-            <span className="font-semibold text-white">10x LEO</span>
-            <ChevronDown className="w-3 h-3" />
-          </div>
-        </div>
-
-        <span className="text-slate-700">|</span>
-
-        {/* Clock & Contact Window */}
-        <div className="flex items-center space-x-2">
-          <span className="text-white font-bold">
-            {(orbital.orbitTimeSec).toFixed(1)}s
-          </span>
-          <span className="text-[10px] text-slate-400">
-            {orbital.isGroundPassActive
-              ? `PASS ACTIVE (${orbital.passCountdownSec}s)`
-              : `PASS IN ${orbital.passCountdownSec}s`}
-          </span>
-        </div>
-
-        <span className="text-slate-700">|</span>
-
-        {/* Orbit Progress Indicator */}
-        <div className="flex items-center space-x-1 text-[10px] text-slate-400">
-          <span>Orb:</span>
-          <span className="text-cyan-400 font-bold">
-            {Math.round(orbital.orbitFraction * 100)}%
-          </span>
-        </div>
-      </div>
-
-      {/* 3. Right: Action Buttons, Evidence & Analyst Profile */}
-      <div className="flex items-center space-x-3">
-        {/* Toggle Telemetry Charts Pill */}
+      {/* 2. Center: Feature Dropdown Buttons (The Core Requirement) */}
+      <nav className="hidden lg:flex items-center space-x-1">
         <button
-          onClick={onTogglePlots}
-          className={`px-3 py-1.5 rounded-full border text-[11px] font-medium flex items-center space-x-1.5 transition ${
-            showPlots
-              ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
-              : 'bg-[#0f172a] hover:bg-slate-800 text-slate-300 border-slate-800'
+          onClick={() => onToggleDrawer(activeDrawer === 'subsystems' ? null : 'subsystems')}
+          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition border ${
+            activeDrawer === 'subsystems'
+              ? 'bg-white text-black border-white shadow-lg'
+              : 'bg-transparent text-zinc-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
           }`}
         >
-          <Radio className="w-3 h-3" />
-          <span>Telemetry Charts</span>
+          01 SUBSYSTEMS ▾
         </button>
 
-        {/* Hardware Manager Modal Trigger */}
         <button
-          onClick={onOpenHardwareModal}
-          className={`px-2.5 py-1.5 rounded-md border flex items-center space-x-1.5 transition text-[11px] font-mono ${
-            !isSim && isConnected
-              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-              : 'bg-[#0f172a] hover:bg-slate-800 text-slate-300 border-slate-800'
+          onClick={() => onToggleDrawer(activeDrawer === 'fdir' ? null : 'fdir')}
+          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition border ${
+            activeDrawer === 'fdir'
+              ? 'bg-white text-black border-white shadow-lg'
+              : isAlarm
+              ? 'bg-red-950/40 text-red-400 border-red-500/50 animate-pulse'
+              : 'bg-transparent text-zinc-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
           }`}
-          title="Hardware Connect, Serial Diagnostics & Pinout Guide"
         >
-          <span className={`w-2 h-2 rounded-full ${!isSim && isConnected ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-          <span className="font-sans hidden md:inline">
-            {!isSim && isConnected ? 'USB 921.6k Active' : 'Hardware Link'}
-          </span>
+          02 FDIR DIAGNOSTICS ▾
         </button>
 
-        {/* Evidence / Hypotheses Button */}
+        <button
+          onClick={() => onToggleDrawer(activeDrawer === 'egse' ? null : 'egse')}
+          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition border ${
+            activeDrawer === 'egse'
+              ? 'bg-white text-black border-white shadow-lg'
+              : store.clipsF1 > 0 || store.frictionF2 !== 'NONE' || store.harnessF3 > 0
+              ? 'bg-amber-950/40 text-amber-300 border-amber-500/50'
+              : 'bg-transparent text-zinc-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
+          }`}
+        >
+          03 EGSE FAULT DOCK ▾
+        </button>
+
+        <button
+          onClick={() => onToggleDrawer(activeDrawer === 'energy' ? null : 'energy')}
+          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition border ${
+            activeDrawer === 'energy'
+              ? 'bg-white text-black border-white shadow-lg'
+              : 'bg-transparent text-zinc-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
+          }`}
+        >
+          04 ENERGY CLOSURE ▾
+        </button>
+
+        <button
+          onClick={() => onToggleDrawer(activeDrawer === 'waveforms' ? null : 'waveforms')}
+          className={`px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition border ${
+            activeDrawer === 'waveforms'
+              ? 'bg-white text-black border-white shadow-lg'
+              : 'bg-transparent text-zinc-400 border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
+          }`}
+        >
+          05 WAVEFORMS (1.6 kHz) ▾
+        </button>
+
         <button
           onClick={onOpenHypothesesModal}
-          className="px-2.5 py-1.5 bg-[#0f172a] hover:bg-slate-800 text-slate-300 rounded-md border border-slate-800 flex items-center space-x-1.5 transition text-[11px]"
-          title="Review H1-H8 Scientific Hypotheses & Evidence"
+          className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest transition text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10"
         >
-          <FlaskConical className="w-3.5 h-3.5 text-amber-400" />
-          <span className="hidden lg:inline">Evidence (H1-H8)</span>
+          06 EVIDENCE (H1-H8) ↗
         </button>
+      </nav>
 
-        {/* Emergency Brake Button */}
+      {/* 3. Right: Mission Clock, Telemetry Policy & Emergency L0 */}
+      <div className="flex items-center space-x-3">
+        {/* Mission Clock */}
+        <div className="bg-white/5 border border-white/10 px-2.5 py-1 text-xs font-bold text-white tracking-widest">
+          {missionClock}
+        </div>
+
+        {/* Telemetry Policy Dropdown */}
+        <div className="relative hidden xl:block">
+          <button
+            onClick={() => setIsPolicyDropdownOpen(!isPolicyDropdownOpen)}
+            className="px-2.5 py-1 bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] text-zinc-300 hover:text-white transition flex items-center space-x-1"
+          >
+            <span>POL: {telemetryPolicy}</span>
+            <ChevronDown className="w-3 h-3 text-zinc-500" />
+          </button>
+
+          {isPolicyDropdownOpen && (
+            <div className="absolute top-full right-0 mt-1 w-44 bg-black/95 backdrop-blur-2xl border border-white/20 shadow-2xl p-1 z-50 text-[11px]">
+              {(['P0_RAW', 'P1_1HZ_HK', 'P2_EDGE_FDIR', 'P3_ISL_RELAY'] as TelemetryPolicy[]).map((pol) => (
+                <button
+                  key={pol}
+                  onClick={() => {
+                    store.setTelemetryPolicy(pol);
+                    setIsPolicyDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 font-bold transition flex items-center justify-between ${
+                    telemetryPolicy === pol
+                      ? 'bg-white text-black'
+                      : 'text-zinc-400 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <span>{pol}</span>
+                  {telemetryPolicy === pol && <Check className="w-3 h-3" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* L0 Emergency Trip Button */}
         <button
           onClick={triggerEmergencyBrake}
-          className={`px-2.5 py-1.5 rounded-md border flex items-center space-x-1.5 text-[11px] font-bold transition ${
+          className={`px-3 py-1 font-bold text-xs uppercase tracking-widest transition border ${
             fdirLayer === 'L0_SAFE_TRIP'
-              ? 'bg-rose-600 text-white border-rose-500 animate-pulse'
-              : 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border-rose-800/60'
+              ? 'bg-red-600 text-white border-red-500 animate-pulse'
+              : 'bg-black text-red-400 border-red-800/80 hover:bg-red-950/50 hover:border-red-500'
           }`}
           title="Layer-0 Hard Emergency Motor Trip"
         >
-          <ShieldAlert className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">L0 Trip</span>
+          L0 TRIP
         </button>
 
-        {/* Profile / Flight Director Role Dropdown */}
-        <div className="flex items-center space-x-2 pl-2 border-l border-slate-800/80">
-          <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-200">
-            FD
-          </div>
-          <span className="text-[11px] font-medium text-slate-300 hidden xl:inline">
-            Flight Director
-          </span>
-          <ChevronDown className="w-3 h-3 text-slate-500 hidden xl:inline" />
-        </div>
+        {/* Connect Hardware Button */}
+        <button
+          onClick={onOpenHardwareModal}
+          className={`px-3 py-1 font-bold text-xs uppercase tracking-widest transition flex items-center space-x-1.5 ${
+            !isSim && isConnected
+              ? 'bg-emerald-500 text-black border border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+              : 'bg-white text-black hover:bg-zinc-200 border border-white'
+          }`}
+        >
+          <Usb className="w-3 h-3" />
+          <span>{!isSim && isConnected ? 'USB LINKED' : 'HARDWARE'}</span>
+        </button>
       </div>
     </header>
   );
 };
-

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 // Cache generated textures so they are created once
 let cachedDayTexture: THREE.CanvasTexture | null = null;
 let cachedNightTexture: THREE.CanvasTexture | null = null;
+let cachedSpecularTexture: THREE.CanvasTexture | null = null;
 let cachedCloudTexture: THREE.CanvasTexture | null = null;
 let cachedFoilTexture: THREE.CanvasTexture | null = null;
 let cachedSilverMliTexture: THREE.CanvasTexture | null = null;
@@ -177,7 +178,106 @@ export function getEarthDayTexture(): THREE.CanvasTexture {
 }
 
 /**
- * 2. Earth Night Lights / City Clusters Texture (2048 x 1024)
+ * 2. Earth Specular Water Glint Texture (2048 x 1024)
+ * Generates an ocean specular mask (White for oceans, Black for continents)
+ * producing the iconic high-specular sunlight reflection on water seen from space.
+ */
+export function getEarthSpecularTexture(): THREE.CanvasTexture {
+  if (cachedSpecularTexture) return cachedSpecularTexture;
+
+  const width = 2048;
+  const height = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+
+  // Oceans: High specular reflection (Pure White)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  const mapCoord = (lon: number, lat: number): [number, number] => {
+    const x = ((lon + 180) / 360) * width;
+    const y = ((90 - lat) / 180) * height;
+    return [x, y];
+  };
+
+  const drawLandMask = (coords: [number, number][]) => {
+    if (coords.length < 3) return;
+    ctx.beginPath();
+    const [sx, sy] = mapCoord(coords[0][0], coords[0][1]);
+    ctx.moveTo(sx, sy);
+    for (let i = 1; i < coords.length; i++) {
+      const [px, py] = mapCoord(coords[i][0], coords[i][1]);
+      ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    // Landmass: zero specular (Black)
+    ctx.fillStyle = '#050505';
+    ctx.fill();
+  };
+
+  // North America
+  drawLandMask([
+    [-165, 68], [-140, 70], [-120, 72], [-85, 74], [-60, 60], [-55, 48],
+    [-70, 42], [-80, 32], [-80, 25], [-97, 26], [-90, 30], [-105, 20],
+    [-85, 15], [-77, 8], [-83, 10], [-92, 16], [-105, 23], [-117, 32],
+    [-124, 40], [-125, 50], [-135, 58], [-160, 58], [-168, 65]
+  ]);
+
+  // South America
+  drawLandMask([
+    [-77, 8], [-60, 10], [-50, 0], [-35, -5], [-37, -15], [-45, -24],
+    [-55, -34], [-65, -45], [-70, -54], [-75, -50], [-72, -35], [-80, -5],
+    [-77, 8]
+  ]);
+
+  // Eurasia
+  drawLandMask([
+    [-10, 36], [0, 43], [10, 45], [20, 40], [30, 42], [40, 40], [55, 25],
+    [65, 25], [70, 22], [80, 13], [85, 22], [90, 24], [100, 15], [105, 10],
+    [108, 22], [120, 25], [122, 32], [128, 38], [130, 45], [140, 52],
+    [160, 55], [170, 65], [180, 68], [170, 72], [100, 75], [60, 70],
+    [30, 71], [15, 65], [5, 58], [-5, 50], [-10, 42]
+  ]);
+
+  // Africa
+  drawLandMask([
+    [-17, 15], [-5, 36], [10, 37], [25, 32], [32, 31], [43, 12], [51, 11],
+    [40, -5], [35, -20], [28, -33], [18, -34], [12, -18], [9, 4], [0, 6],
+    [-15, 11]
+  ]);
+
+  // Australia
+  drawLandMask([
+    [114, -22], [125, -15], [136, -12], [142, -11], [147, -20], [153, -28],
+    [150, -37], [140, -38], [130, -32], [115, -34], [113, -26]
+  ]);
+
+  // Antarctica
+  ctx.beginPath();
+  const [ax0, ay0] = mapCoord(-180, -70);
+  ctx.moveTo(ax0, ay0);
+  for (let lon = -180; lon <= 180; lon += 10) {
+    const lat = -70 - Math.sin((lon * Math.PI) / 60) * 8;
+    const [px, py] = mapCoord(lon, lat);
+    ctx.lineTo(px, py);
+  }
+  ctx.lineTo(width, height);
+  ctx.lineTo(0, height);
+  ctx.closePath();
+  ctx.fillStyle = '#050505';
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  cachedSpecularTexture = texture;
+  return texture;
+}
+
+/**
+ * 3. Earth Night Lights / City Clusters Texture (2048 x 1024)
  * Generates golden/amber urban city clusters glowing on the dark side of Earth.
  */
 export function getEarthNightTexture(): THREE.CanvasTexture {

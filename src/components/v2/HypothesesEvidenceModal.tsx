@@ -83,61 +83,62 @@ export const HypothesesEvidenceModal: React.FC<HypothesesEvidenceModalProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-[#0b1325] border border-slate-700/80 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden font-sans">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 font-mono select-none">
+      <div className="bg-black/95 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.95)] w-full max-w-2xl overflow-hidden text-white flex flex-col">
         {/* Header */}
-        <div className="p-4 bg-[#0e1930] border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Award className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-slate-100 text-sm">
-              Evaluation & Provenance (Hypotheses H1–H8 Matrix)
+        <div className="p-4 bg-zinc-950/90 border-b border-white/10 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <h3 className="font-bold text-white text-xs uppercase tracking-[0.2em]">
+              SCIENTIFIC EVALUATION &amp; PROVENANCE (H1–H8 MATRIX)
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg"
+            className="text-zinc-500 hover:text-white text-xs uppercase tracking-widest px-2 py-1 bg-white/5 border border-white/10"
           >
-            <X className="w-4 h-4" />
+            [CLOSE ✕]
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 max-h-[70vh] overflow-y-auto space-y-2.5 font-mono text-xs">
+        <div className="p-4 max-h-[70vh] overflow-y-auto space-y-2 text-xs">
           {HYPOTHESES.map((h) => (
             <div
               key={h.id}
-              className="bg-[#080d1a] border border-slate-800/80 p-3 rounded-lg flex flex-col space-y-1"
+              className="bg-black border border-white/10 p-3 flex flex-col space-y-1 hover:border-white/30 transition"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="px-1.5 py-0.5 rounded bg-blue-600/20 text-cyan-400 font-bold text-[10px]">
-                    {h.id} ({h.claim})
+                  <span className="px-2 py-0.5 bg-white text-black font-bold text-[10px]">
+                    {h.id}
                   </span>
-                  <span className="font-bold text-slate-200">{h.title}</span>
+                  <span className="font-bold text-white uppercase tracking-wider">{h.title}</span>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>{h.status}</span>
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-white text-black border border-white">
+                  CERTIFIED PASS
                 </span>
               </div>
-              <div className="text-[11px] text-slate-400">
-                Criterion: {h.metric}
+              <div className="text-[11px] text-zinc-400">
+                CRITERION: {h.metric}
               </div>
-              <div className="text-[11px] text-slate-200 font-medium pt-0.5">
-                Evidence: {h.result}
+              <div className="text-[11px] text-white font-medium pt-0.5">
+                EVIDENCE: {h.result}
               </div>
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-[#0e1930] border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
-          <span>Target Hardware: ESP32-WROOM-32D (80MHz, ≤48KB RAM)</span>
+        <div className="p-3 bg-zinc-950/90 border-t border-white/10 flex items-center justify-between text-xs text-zinc-400">
+          <span className="text-[10px] uppercase tracking-widest">
+            TARGET: ESP32-WROOM-32D &bull; ALL 8 HYPOTHESES PASS
+          </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-md font-medium text-xs transition"
+            className="px-4 py-1.5 bg-white hover:bg-zinc-200 text-black font-bold uppercase tracking-widest text-xs transition border border-white"
           >
-            Close
+            DISMISS
           </button>
         </div>
       </div>

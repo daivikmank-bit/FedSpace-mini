@@ -7,20 +7,23 @@ import { useStationStore } from '../../store/useStationStore';
 import {
   getEarthDayTexture,
   getEarthNightTexture,
+  getEarthSpecularTexture,
   getEarthCloudsTexture,
   getKaptonFoilTexture,
   getSilverMliTexture,
   getSolarCellTexture
 } from './proceduralSpaceTextures';
 
+export type CameraPreset = 'HERO_CHASE' | 'EARTH_HORIZON' | 'GROUND_TRACK' | 'WHEEL_INSPECT';
+
 interface SpaceConstellationCanvasProps {
-  cameraMode?: 'SAT_HERO' | 'LEO_ORBIT';
-  onToggleCameraMode?: () => void;
+  cameraPreset?: CameraPreset;
+  onCameraPresetChange?: (preset: CameraPreset) => void;
 }
 
 export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> = ({
-  cameraMode: externalCameraMode,
-  onToggleCameraMode
+  cameraPreset = 'HERO_CHASE',
+  onCameraPresetChange
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const store = useStationStore();
@@ -28,8 +31,12 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
   const fdirLayer = store.fdirLayer;
   const clipsF1 = store.clipsF1;
 
-  const [internalCameraMode, setInternalCameraMode] = useState<'SAT_HERO' | 'LEO_ORBIT'>('SAT_HERO');
-  const currentMode = externalCameraMode || internalCameraMode;
+  // Active camera preset tracking
+  const [activePreset, setActivePreset] = useState<CameraPreset>(cameraPreset);
+
+  useEffect(() => {
+    setActivePreset(cameraPreset);
+  }, [cameraPreset]);
 
   // Three.js Scene References
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
@@ -43,6 +50,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
   const antennaAuraRef = useRef<THREE.Mesh | null>(null);
   const satBAuraRef = useRef<THREE.Mesh | null>(null);
   const islBeamRef = useRef<THREE.Line | null>(null);
+  const islPacketsRef = useRef<THREE.Group | null>(null);
   const downlinkLineRef = useRef<THREE.Line | null>(null);
   const groundBeaconRef = useRef<THREE.Mesh | null>(null);
 
@@ -70,28 +78,53 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     cameraRef.current = camera;
 
     // =========================================================================
-    // 1. SPACE LIGHTING (Harsh high-contrast space sunlight + Earth shine)
+    // 1. SPACE LIGHTING & SOLAR CORONA
     // =========================================================================
-    scene.add(new THREE.AmbientLight(0x0a1224, 0.95));
+    scene.add(new THREE.AmbientLight(0x050b18, 1.1));
 
-    // Sun directional light
-    const sunLight = new THREE.DirectionalLight(0xfffaed, 3.5);
-    sunLight.position.set(45, 25, 40);
+    // Sun directional light (Harsh space sunlight)
+    const sunLight = new THREE.DirectionalLight(0xfffaee, 4.4);
+    sunLight.position.set(55, 32, 48);
     scene.add(sunLight);
 
-    // Blue Earth-Shine albedo light
-    const earthShine = new THREE.DirectionalLight(0x38bdf8, 1.4);
-    earthShine.position.set(-15, -25, -15);
+    // Blue Earth-Shine albedo fill light
+    const earthShine = new THREE.DirectionalLight(0x38bdf8, 1.6);
+    earthShine.position.set(-18, -28, -18);
     scene.add(earthShine);
 
+    // Optical Sun Corona Glare Sprite
+    const sunCanvas = document.createElement('canvas');
+    sunCanvas.width = 128;
+    sunCanvas.height = 128;
+    const sCtx = sunCanvas.getContext('2d')!;
+    const sGrad = sCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    sGrad.addColorStop(0, 'rgba(255, 255, 240, 1.0)');
+    sGrad.addColorStop(0.15, 'rgba(255, 230, 160, 0.7)');
+    sGrad.addColorStop(0.4, 'rgba(255, 180, 80, 0.25)');
+    sGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    sCtx.fillStyle = sGrad;
+    sCtx.fillRect(0, 0, 128, 128);
+    const sunTex = new THREE.CanvasTexture(sunCanvas);
+
+    const sunSpriteMat = new THREE.SpriteMaterial({
+      map: sunTex,
+      color: 0xffffff,
+      transparent: true,
+      blending: THREE.AdditiveBlending
+    });
+    const sunSprite = new THREE.Sprite(sunSpriteMat);
+    sunSprite.position.set(110, 64, 96);
+    sunSprite.scale.set(48, 48, 1);
+    scene.add(sunSprite);
+
     // Milky Way & Deep Space Starfield
-    const starCount = 3000;
+    const starCount = 3500;
     const starGeo = new THREE.BufferGeometry();
     const starPos = new Float32Array(starCount * 3);
     const starColor = new Float32Array(starCount * 3);
 
     for (let i = 0; i < starCount * 3; i += 3) {
-      const r = 130 + Math.random() * 80;
+      const r = 140 + Math.random() * 90;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos((Math.random() * 2) - 1);
       starPos[i] = r * Math.sin(phi) * Math.cos(theta);
@@ -100,20 +133,20 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
 
       const t = Math.random();
       if (t > 0.8) {
-        starColor[i] = 0.7; starColor[i + 1] = 0.85; starColor[i + 2] = 1.0;
+        starColor[i] = 0.75; starColor[i + 1] = 0.88; starColor[i + 2] = 1.0;
       } else if (t < 0.15) {
-        starColor[i] = 1.0; starColor[i + 1] = 0.75; starColor[i + 2] = 0.5;
+        starColor[i] = 1.0; starColor[i + 1] = 0.78; starColor[i + 2] = 0.55;
       } else {
-        starColor[i] = 0.95; starColor[i + 1] = 0.95; starColor[i + 2] = 1.0;
+        starColor[i] = 0.96; starColor[i + 1] = 0.96; starColor[i + 2] = 1.0;
       }
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
     starGeo.setAttribute('color', new THREE.BufferAttribute(starColor, 3));
     const starMat = new THREE.PointsMaterial({
-      size: 1.15,
+      size: 1.2,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9
+      opacity: 0.95
     });
     scene.add(new THREE.Points(starGeo, starMat));
 
@@ -123,7 +156,7 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     const solarTex = getSolarCellTexture();
 
     // =========================================================================
-    // 2. PHOTOREALISTIC DUAL-LAYER EARTH (Rotating Globe + Clouds + Atmosphere)
+    // 2. PHOTOREALISTIC DUAL-LAYER EARTH WITH OCEAN SPECULAR GLINT
     // =========================================================================
     const earthParent = new THREE.Group();
     scene.add(earthParent);
@@ -132,18 +165,20 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
 
     const earthRadius = 15.0;
 
-    // Layer A: Earth Globe with Day Albedo + City Night Lights Emissive
+    // Layer A: Earth Globe with Day Albedo + Ocean Specular Glint + City Night Lights
     const dayTex = getEarthDayTexture();
     const nightTex = getEarthNightTexture();
+    const specularTex = getEarthSpecularTexture();
 
     const earthGeo = new THREE.SphereGeometry(earthRadius, 64, 64);
     const earthMat = new THREE.MeshPhongMaterial({
       map: dayTex,
+      specularMap: specularTex,
+      specular: new THREE.Color(0xa5f3fc), // Brilliant cyan-white solar glint on oceans
+      shininess: 48,
       emissiveMap: nightTex,
       emissive: new THREE.Color(0xffffff),
-      emissiveIntensity: 0.65,
-      specular: new THREE.Color(0x38bdf8),
-      shininess: 35
+      emissiveIntensity: 0.55
     });
     const earthGlobe = new THREE.Mesh(earthGeo, earthMat);
     earthParent.add(earthGlobe);
@@ -449,6 +484,19 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     scene.add(islLine);
     islBeamRef.current = islLine;
 
+    // Moving Optical Photon Packets along ISL beam
+    const islPacketsGroup = new THREE.Group();
+    scene.add(islPacketsGroup);
+    islPacketsRef.current = islPacketsGroup;
+
+    for (let p = 0; p < 4; p++) {
+      const pMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0x00f0ff })
+      );
+      islPacketsGroup.add(pMesh);
+    }
+
     // Downlink Beam from Sat B to Earth Ground Station
     const downGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
     const downMat = new THREE.LineBasicMaterial({
@@ -462,8 +510,18 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
     downlinkLineRef.current = downLine;
 
     // =========================================================================
-    // 6. MOUSE DRAG & ORBIT CONTROLS
+    // 6. SPHERICAL MOUSE ORBIT & ZOOM CONTROLS
     // =========================================================================
+    let targetRadius = 7.0;
+    let targetTheta = 0.8;
+    let targetPhi = 1.1;
+    let targetLook = new THREE.Vector3(0, 0, 0);
+
+    let curRadius = 7.0;
+    let curTheta = 0.8;
+    let curPhi = 1.1;
+    let curLook = new THREE.Vector3(0, 0, 0);
+
     let isDragging = false;
     let prevMouseX = 0;
     let prevMouseY = 0;
@@ -478,21 +536,16 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
       if (!isDragging) return;
       const dx = e.clientX - prevMouseX;
       const dy = e.clientY - prevMouseY;
-
-      if (currentMode === 'SAT_HERO') {
-        satARoot.rotation.y += dx * 0.005;
-        satARoot.rotation.x += dy * 0.005;
-      } else {
-        scene.rotation.y += dx * 0.004;
-        scene.rotation.x += dy * 0.004;
-      }
       prevMouseX = e.clientX;
       prevMouseY = e.clientY;
+
+      targetTheta -= dx * 0.005;
+      targetPhi = Math.max(0.15, Math.min(Math.PI - 0.15, targetPhi - dy * 0.005));
     };
 
     const onMouseUp = () => { isDragging = false; };
     const onWheel = (e: WheelEvent) => {
-      camera.position.z = Math.max(3.5, Math.min(50, camera.position.z + e.deltaY * 0.02));
+      targetRadius = Math.max(2.6, Math.min(48.0, targetRadius + e.deltaY * 0.015));
     };
 
     canvas.addEventListener('mousedown', onMouseDown);
@@ -533,29 +586,43 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
       satBRoot.rotation.y = 0.65 + Math.sin(now * 0.001) * 0.05;
       satBRoot.rotation.z = 0.05 + Math.cos(now * 0.0012) * 0.03;
 
-      // Actual Orbital Revolution of Sat A:
-      if (currentMode === 'SAT_HERO') {
-        const orbitAngle = orbital.orbitFraction * 2 * Math.PI;
-        satARoot.rotation.z = Math.sin(orbitAngle * 0.5) * 0.08;
+      // Actual Orbital Revolution & Attitude Wobble under F1 Mass Imbalance
+      const orbitAngle = orbital.orbitFraction * 2 * Math.PI;
+      satARoot.rotation.z = Math.sin(orbitAngle * 0.5) * 0.08;
 
-        if (clipsF1 > 0 && rpm > 40) {
-          const wobbleFreq = wheelOmega;
-          const wobbleAmp = (clipsF1 * 0.015) * Math.min(1.5, rpm / 220);
-          satARoot.position.x = Math.sin(now * 0.01) * wobbleAmp;
-          satARoot.position.y = Math.cos(now * 0.01) * wobbleAmp;
-          satARoot.rotation.x += Math.sin(wobbleFreq * dt * 4) * 0.003;
-        } else {
-          satARoot.position.set(0, 0, 0);
-        }
+      if (clipsF1 > 0 && rpm > 40) {
+        const wobbleFreq = wheelOmega;
+        const wobbleAmp = (clipsF1 * 0.015) * Math.min(1.5, rpm / 220);
+        satARoot.position.x = Math.sin(now * 0.01) * wobbleAmp;
+        satARoot.position.y = Math.cos(now * 0.01) * wobbleAmp;
+        satARoot.rotation.x += Math.sin(wobbleFreq * dt * 4) * 0.003;
+      } else {
+        satARoot.position.set(0, 0, 0);
       }
 
-      // Camera Smooth Interpolation
-      const targetCamPos = currentMode === 'SAT_HERO'
-        ? new THREE.Vector3(4.5, 2.6, 6.8)
-        : new THREE.Vector3(0, 24, 38);
+      // Preset Camera Position Management
+      if (activePreset === 'HERO_CHASE') {
+        targetLook.set(0, 0, 0);
+      } else if (activePreset === 'EARTH_HORIZON') {
+        targetLook.set(0, -6, 0);
+      } else if (activePreset === 'GROUND_TRACK') {
+        targetLook.set(0, -10, 0);
+      } else if (activePreset === 'WHEEL_INSPECT') {
+        targetLook.set(0, 0.8, -0.7);
+      }
 
-      camera.position.lerp(targetCamPos, 0.05);
-      camera.lookAt(0, 0, 0);
+      // Smooth camera interpolation
+      curRadius += (targetRadius - curRadius) * 0.08;
+      curTheta += (targetTheta - curTheta) * 0.08;
+      curPhi += (targetPhi - curPhi) * 0.08;
+      curLook.lerp(targetLook, 0.08);
+
+      const cx = curLook.x + curRadius * Math.sin(curPhi) * Math.sin(curTheta);
+      const cy = curLook.y + curRadius * Math.cos(curPhi);
+      const cz = curLook.z + curRadius * Math.sin(curPhi) * Math.cos(curTheta);
+
+      camera.position.set(cx, cy, cz);
+      camera.lookAt(curLook);
 
       // Antenna RF Beacon state
       if (antennaAuraRef.current) {
@@ -590,6 +657,17 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
         ]);
         lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         lineGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Animate Optical Photon Packets along ISL
+      if (islPacketsRef.current) {
+        const posA = satARoot.position.clone().add(new THREE.Vector3(0, 1.4, 1.4));
+        const posB = satBRoot.position.clone().add(new THREE.Vector3(0, 0.9, 0.8));
+        const packets = islPacketsRef.current.children;
+        for (let i = 0; i < packets.length; i++) {
+          const frac = (now * 0.0012 + (i / packets.length)) % 1.0;
+          packets[i].position.lerpVectors(posA, posB, frac);
+        }
       }
 
       // Downlink Beam from Sat B to Earth Ground Station
@@ -634,68 +712,11 @@ export const SpaceConstellationCanvas: React.FC<SpaceConstellationCanvasProps> =
       canvas.removeEventListener('wheel', onWheel);
       renderer.dispose();
     };
-  }, [currentMode]);
+  }, [activePreset]);
 
   return (
-    <div className="relative w-full h-full bg-[#050914] overflow-hidden select-none">
+    <div className="absolute inset-0 w-full h-full bg-[#020409] overflow-hidden select-none">
       <canvas ref={canvasRef} className="w-full h-full block cursor-grab active:cursor-grabbing" />
-
-      {/* Hero Satellite Telemetry Overlay Tags */}
-      <div className="absolute top-3 left-4 flex items-center space-x-2 pointer-events-none z-10 font-mono text-xs">
-        <div className="px-2.5 py-1 bg-[#0b1325]/90 backdrop-blur-md border border-slate-700/70 rounded-md text-slate-200 flex items-center space-x-2 shadow-lg">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="font-bold text-white">Sat A (DUT CubeSat)</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-cyan-300 font-bold">{store.hk.rpmKalman.toFixed(0)} RPM</span>
-        </div>
-
-        <div className="px-2 py-1 bg-[#0b1325]/80 backdrop-blur-md border border-slate-800 rounded-md text-[11px] text-slate-400">
-          LEO Alt: <strong className="text-slate-200">520 km</strong>
-        </div>
-
-        <div className="px-2 py-1 bg-[#0b1325]/80 backdrop-blur-md border border-slate-800 rounded-md text-[11px] text-slate-400">
-          Winding: <strong className="text-amber-300">{store.hk.windingTempEstC.toFixed(1)}°C</strong>
-        </div>
-      </div>
-
-      {/* Orbit & Pass Info Badge (Top Right) */}
-      <div className="absolute top-3 right-4 flex items-center space-x-2 pointer-events-none z-10 font-mono text-xs">
-        <div className="px-2.5 py-1 bg-[#0b1325]/90 backdrop-blur-md border border-slate-700/70 rounded-md text-slate-300 flex items-center space-x-2 shadow-lg">
-          <span>Orbital Revolution:</span>
-          <span className="text-cyan-400 font-bold">576.0s (10x LEO)</span>
-        </div>
-
-        <div className={`px-2.5 py-1 rounded-md border backdrop-blur-md text-xs font-mono font-medium ${
-          orbital.isGroundPassActive
-            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 font-bold animate-pulse'
-            : 'bg-[#0b1325]/90 border-slate-800 text-slate-400'
-        }`}>
-          <span>LoS Pass: </span>
-          <span>{orbital.isGroundPassActive ? `ACTIVE (${orbital.passCountdownSec}s)` : `IN ${orbital.passCountdownSec}s`}</span>
-        </div>
-      </div>
-
-      {/* Camera Mode Switch Button (Floating Top Left) */}
-      <div className="absolute top-12 left-4 z-20 font-mono text-[11px]">
-        <button
-          onClick={() => {
-            const next = currentMode === 'SAT_HERO' ? 'LEO_ORBIT' : 'SAT_HERO';
-            setInternalCameraMode(next);
-            if (onToggleCameraMode) onToggleCameraMode();
-          }}
-          className="px-2.5 py-1 bg-[#0d1629]/90 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 rounded-md text-slate-200 shadow-md flex items-center space-x-1.5 transition"
-        >
-          <span>Camera:</span>
-          <strong className="text-cyan-400">
-            {currentMode === 'SAT_HERO' ? 'Satellite Orbit Chase POV' : 'Full Earth Constellation'}
-          </strong>
-        </button>
-      </div>
-
-      {/* Bottom Hint */}
-      <div className="absolute bottom-2 left-4 text-[10px] text-slate-500 font-mono pointer-events-none">
-        Drag to Orbit 360° around Satellite • Earth Rotates in Real Orbital Revolution Below
-      </div>
     </div>
   );
 };

@@ -15,12 +15,22 @@ FedSpace-Mini v2 is a complete flight-software, 3D simulation, and Mission Contr
 
 - **"Simulate Now, Plug Hardware Later":** Runs completely in-browser on day one with an embedded Web Worker flight-physics ODE engine, and connects seamlessly to physical microcontrollers over a single USB cable using native **WebSerial** or a **Python WebSocket gateway**.
 - **Hero 3D Digital Twin:** 
+  - **Full-Screen Cinematic Viewport:** The 3D space simulation occupies 100% of the screen edge-to-edge. No cramped static sidebars!
   - **Sat A (DUT CubeSat):** Centered hero view with wrinkled gold Kapton thermal MLI, deployable solar wings, ADXL345 radial accelerometer, and optical pulse counter.
-  - **Sat B (ISL Relay Node):** High-gain communications satellite with parabolic mesh reflector dish, silver beta-cloth MLI, and animated inter-satellite laser link (ISL).
-  - **Photorealistic Earth Globe:** $23.44^\circ$ axial tilt, dynamic atmospheric glow, day albedo, glowing night city clusters, procedural clouds, and line-of-sight (LoS) ground station contact passes.
+  - **Sat B (ISL Relay Node):** High-gain communications satellite with parabolic mesh reflector dish, silver beta-cloth MLI, and animated inter-satellite laser link (ISL) photon packets.
+  - **Photorealistic Earth Globe:** $23.44^\circ$ axial tilt, specular ocean reflections catching solar glints, dynamic atmospheric Rayleigh glow, glowing night city clusters, procedural clouds, and line-of-sight (LoS) ground station contact passes.
   - **True Physical Revolutions:** Wheel rotates at exact mathematical angular velocity ($\omega(t) = 2\pi \cdot \text{RPM} / 60$) independent of screen refresh rate.
-- **Picture-in-Picture (PiP) Reaction Wheel Twin:** Cutaway rendering showing the TT gearmotor, 65mm rubber tire, 20-slot optical disc, flashing LM393 IR LED, snap-on clips ($F_1$), SG90 servo friction wiper ($F_2$), virtual harness ($F_3$), and real-time 3D phasor vectors ($Z_0, Z_{1\times}$).
-- **Vidyut Drishti Inspired UI Cockpit:** Top mission navigation bar, left subsystem hierarchy tree with bottom Energy Balance telemetry card, center 3D viewport with floating pins and Canvas telemetry drawer, and right investigation dock with 3-of-5 persistence, Top-4 explainability, and fault actuation.
+  - **Camera Orbit Presets:** Four cinematic viewpoints (`[HERO CHASE]`, `[ORBITAL CONSTELLATION]`, `[CAPE CANAVERAL PASS]`, `[RW-01 MACRO INSPECT]`) with full 360° mouse drag orbit controls.
+- **Picture-in-Picture (PiP) Reaction Wheel Twin:** Floating aerospace gimbal inspection feed (`CAM 02 // RW-01 CUTAWAY`) showing the TT gearmotor, 65mm rubber tire, 20-slot optical disc, flashing LM393 IR LED, snap-on clips ($F_1$), SG90 servo friction wiper ($F_2$), virtual harness ($F_3$), and real-time 3D phasor vectors ($Z_0, Z_{1\times}$).
+- **SpaceX-Inspired Monochromatic Cockpit & Dropdown Drawers:** 
+  - Minimalist, high-contrast, black-and-white theme (`#000000` pitch black, stark white typography, wide letter tracking).
+  - Floating top HUD with interactive dropdown triggers that slide down on click without obstructing space:
+    - `01 SUBSYSTEMS ▾`: Hierarchical constellation tree & sensor telemetries.
+    - `02 FDIR DIAGNOSTICS ▾`: 3-of-5 persistence, anomaly score gauge, Top-4 explainability residuals.
+    - `03 EGSE FAULT DOCK ▾`: One-click fault injection controls for $F_1$, $F_2$, and $F_3$.
+    - `04 ENERGY CLOSURE ▾`: Microjoule stage breakdown & P2 radio sleep metrics ($\le 2\%$ closure error).
+    - `05 WAVEFORMS ▾`: 60 FPS Canvas waveforms (Speed, Current, Score, 1.6 kHz Vibration, 1x Phasor Polar Plot).
+  - Bottom SpaceX telemetry strip displaying live stage, altitude, velocity, RPM, current, temperature, and ground pass countdown.
 - **Scientific Rigor & Parity Certification:** 
   - Bit-accuracy parity gate verified ($< 10^{-3}$ relative error).
   - Programmatic verification suite for all 8 scientific hypotheses (H1–H8).
